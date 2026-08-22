@@ -57,6 +57,9 @@ model Cliente {
   updatedAt  DateTime @updatedAt
 
   asignaciones AsignacionPrograma[]
+  reservas     Reserva[]
+  pagos        Pago[]
+  suscripcion  Suscripcion?
 }
 
 model Session {
@@ -212,4 +215,121 @@ model BloqueCompletado {
   completadoEn DateTime           @default(now())
 
   @@unique([asignacionId, bloqueId, semana])
+}
+
+model Servicio {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nombre      String
+  tag         String
+  duracionMin Int
+  precio      Int
+  cupoMax     Int
+  activo      Boolean  @default(true)
+
+  horarios    HorarioRecurrente[]
+  clases      Clase[]
+}
+
+model HorarioRecurrente {
+  id          String   @id @default(cuid())
+  servicioId  String
+  servicio    Servicio @relation(fields: [servicioId], references: [id])
+  diaSemana   Int
+  horaInicio  String
+  activo      Boolean  @default(true)
+}
+
+model Clase {
+  id          String    @id @default(cuid())
+  servicioId  String
+  servicio    Servicio  @relation(fields: [servicioId], references: [id])
+  fecha       DateTime
+  cupoMax     Int
+  cancelada   Boolean   @default(false)
+  reservas    Reserva[]
+
+  @@unique([servicioId, fecha])
+  @@index([fecha])
+}
+
+enum EstadoReserva {
+  CONFIRMADA
+  LISTA_ESPERA
+  CANCELADA
+  ASISTIO
+  NO_ASISTIO
+}
+
+model Reserva {
+  id             String        @id @default(cuid())
+  clienteId      String
+  cliente        Cliente       @relation(fields: [clienteId], references: [id])
+  claseId        String
+  clase          Clase         @relation(fields: [claseId], references: [id])
+  estado         EstadoReserva @default(CONFIRMADA)
+  pagoId         String?       @unique
+  pago           Pago?         @relation(fields: [pagoId], references: [id])
+  viaMensualidad Boolean       @default(false)
+  creadaEn       DateTime      @default(now())
+  canceladaEn    DateTime?
+  canceladaTarde Boolean       @default(false)
+
+  @@index([claseId, estado])
+  @@index([clienteId])
+}
+
+enum EstadoSuscripcion {
+  ACTIVA
+  CANCELADA
+  VENCIDA
+}
+
+model Suscripcion {
+  id                String            @id @default(cuid())
+  clienteId         String            @unique
+  cliente           Cliente           @relation(fields: [clienteId], references: [id])
+  estado            EstadoSuscripcion @default(ACTIVA)
+  precio            Int
+  fechaInicio       DateTime          @default(now())
+  fechaProximoCobro DateTime
+  mpPreapprovalId   String?           @unique
+  canceladaEn       DateTime?
+
+  pagos             Pago[]
+}
+
+enum TipoPago {
+  CLASE_SUELTA
+  MENSUALIDAD
+}
+
+enum MedioPago {
+  MERCADO_PAGO
+  EFECTIVO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
+}
+
+model Pago {
+  id            String       @id @default(cuid())
+  clienteId     String
+  cliente       Cliente      @relation(fields: [clienteId], references: [id])
+  tipo          TipoPago
+  medio         MedioPago
+  monto         Int
+  estado        EstadoPago   @default(PENDIENTE)
+  mpPaymentId   String?      @unique
+  suscripcionId String?
+  suscripcion   Suscripcion? @relation(fields: [suscripcionId], references: [id])
+  reserva       Reserva?
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
+
+  @@index([mpPaymentId])
 }
