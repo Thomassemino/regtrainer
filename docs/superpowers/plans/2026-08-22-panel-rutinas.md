@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - No reinterpretar el modelo de datos del spec §4: son exactamente 6 modelos (`Programa`, `DiaPrograma`, `Bloque`, `FilaSobrecarga`, `AsignacionPrograma`, `BloqueCompletado`) y 3 enums (`EstadoPrograma`, `TipoBloque`, `Foco`). No agregar campos fuera de ese modelo (ver Task 13 para el caso concreto de "Trabajo en carrera" del widget de volumen, que el modelo no soporta).
-- `AsignacionPrograma` es la única fuente de verdad de "qué cliente tiene qué programa" — nunca se agrega un campo `clienteId` directo a `Programa`. Un programa recién creado (`BORRADOR`, sin asignar) no aparece en la ficha de ningún cliente hasta que pasa por `/asignar` — es consecuencia directa del modelo M:N ya decidido en el spec, aunque el botón "Armar rutina" de la ficha navegue directo al builder sin crear todavía esa relación (ver Task 12, nota de diseño).
+- `AsignacionPrograma` es la única fuente de verdad de "qué cliente tiene qué programa" — nunca se agrega un campo `clienteId` directo a `Programa`. El botón "Armar rutina" de la ficha de un cliente (Task 12) llama a `POST /api/coach/programas` pasando ese `clienteId`, que crea el `Programa` y su `AsignacionPrograma` en la misma operación (Task 2) — así el programa aparece en la ficha desde `BORRADOR`, sin esperar a `/asignar`. `/asignar` (Task 15) sigue siendo el camino para sumar clientes adicionales al mismo programa después.
 - Todo bajo `/api/coach/*` protegido por `proxy.ts` (ya existe de Fundación) + verificación server-side de `role === "ADMIN"` en cada Route Handler vía el helper `requireAdmin()` de Task 2 — nunca confiar solo en `proxy.ts`.
 - Todo bajo `/api/cuenta/mi-rutina*` deriva `clienteId` de la sesión (`requireClienteActual()`, Task 2) — nunca de un parámetro de la URL ni del body.
 - `PATCH /api/coach/dias/:diaId/reordenar` y los endpoints de duplicar validan siempre que los días/bloques involucrados pertenezcan al mismo `Programa` antes de mutar nada (spec §10).
@@ -226,6 +226,8 @@ git commit -m "feat: schema prisma de programas, dias, bloques y asignaciones"
 
 **Nota de criterio (para auditar):** el spec §5 define la progresión de `pct`/`reps` al agregar una semana, pero no dice qué pasa con `series`/`descanso` en esa fila nueva. Este plan los mantiene constantes, heredados de la semana 1 del mismo bloque (criterio propio, no explícito en el spec) — siguen siendo editables después vía `PATCH /api/coach/bloques/:bloqueId` (Task 3).
 
+**Ajuste post-revisión (corrige la discrepancia #2 del self-review):** `POST /api/coach/programas` acepta un `clienteId` opcional. Cuando Beto arma una rutina desde el botón "Armar rutina" de la ficha de un cliente (handoff, pantalla `ficha`), el `Programa` se crea con su `AsignacionPrograma` en la misma operación — así el programa aparece en la ficha de ese cliente desde el instante en que existe, aunque siga en `BORRADOR`, tal como asume el prototipo del handoff ("Bloque 2 · Fuerza & Motor · En edición" ya listado). La pantalla `asignar` (Task 15) sigue existiendo tal cual para agregar *más* clientes al mismo programa después — este ajuste solo resuelve el caso del primer cliente, el dueño original para el que se arma la rutina.
+
 - [ ] **Step 1: Escribir los guards de rol**
 
 ```typescript
@@ -429,6 +431,7 @@ const CrearProgramaSchema = z.object({
   objetivo: z.string().min(2),
   frecuencia: z.string().min(2),
   semanas: z.number().int().min(2).max(8).default(4),
+  clienteId: z.string().min(1).optional(), // ver "Ajuste post-revisión" arriba: dueño original de la rutina
 });
 
 export async function POST(req: Request) {
@@ -439,7 +442,14 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Datos inválidos" }, { status: 400 });
   }
-  const { nombre, objetivo, frecuencia, semanas } = parsed.data;
+  const { nombre, objetivo, frecuencia, semanas, clienteId } = parsed.data;
+
+  if (clienteId) {
+    const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
+    if (!cliente) {
+      return Response.json({ error: "Cliente no encontrado" }, { status: 404 });
+    }
+  }
 
   const programa = await prisma.programa.create({
     data: {
@@ -451,13 +461,50 @@ export async function POST(req: Request) {
       dias: {
         create: Array.from({ length: 7 }, (_, diaSemana) => ({ diaSemana, descanso: false })),
       },
+      ...(clienteId
+        ? { asignaciones: { create: { clienteId, mensajePersonalizado: null } } }
+        : {}),
     },
-    include: { dias: { orderBy: { diaSemana: "asc" } } },
+    include: { dias: { orderBy: { diaSemana: "asc" } }, asignaciones: true },
   });
 
   return Response.json({ programa }, { status: 201 });
 }
 ```
+
+- [ ] **Step 9b: Test de integración del alta con `clienteId`**
+
+```typescript
+// tests/integration/programas.test.ts (agregar este describe al mismo archivo del Step 7)
+describe("crear programa con clienteId — dueño original desde la ficha", () => {
+  it("crea la AsignacionPrograma junto con el programa cuando se pasa clienteId", async () => {
+    const { user } = await crearAdmin();
+    const clienteUser = await prisma.user.create({
+      data: { email: "duena-programa@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({
+      data: { userId: clienteUser.id, nombre: "Dueña Programa", iniciales: "DP", objetivo: "" },
+    });
+
+    const { POST } = await import("../../app/api/coach/programas/route");
+    const { auth } = await import("../../lib/auth");
+    vi.mocked(auth).mockResolvedValue({ user: { id: user.id, role: "ADMIN" } } as never);
+
+    const res = await POST(
+      new Request("http://localhost/api/coach/programas", {
+        method: "POST",
+        body: JSON.stringify({ nombre: "Fuerza & Motor", objetivo: "Fuerza", frecuencia: "5 días semanales", clienteId: cliente.id }),
+      })
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.programa.asignaciones).toHaveLength(1);
+    expect(body.programa.asignaciones[0].clienteId).toBe(cliente.id);
+  });
+});
+```
+
+Nota: este test requiere `vi.mock("../../lib/auth", () => ({ auth: vi.fn() }))` al inicio del archivo (agregar el import de `vi` de `vitest` y el mock, siguiendo el mismo patrón que ya usan los tests de Route Handlers de Booking+Pagos) — el resto de tests de este archivo (Step 7) no necesitan sesión porque llaman a Prisma directo, no al Route Handler.
 
 - [ ] **Step 10: Implementar `PATCH /api/coach/dias/:diaId` (calentamiento y toggle de descanso — "Convertir a entrenamiento")**
 
@@ -2512,7 +2559,7 @@ git commit -m "feat: pantalla de lista de clientes del panel de rutinas"
 **Interfaces:**
 - Consumes: `GET /api/coach/clientes/:clienteId` (Task 4), `POST /api/coach/programas` (Task 2), `POST /api/coach/programas/:id/duplicar` (Task 6), `vals.fichaId`, `vals.goBuilder`, `vals.goClientes`.
 
-**Nota de diseño (para auditar):** el README del handoff muestra en la ficha una lista de "Rutinas de `<nombre>`" que incluye programas en estado `En edición` (`BORRADOR`, sin asignar todavía). Con el modelo M:N del spec §4, un `Programa` solo queda vinculado a un cliente vía `AsignacionPrograma` — que recién se crea en `/asignar` (Task 7). Este plan resuelve la lista de "Rutinas de este cliente" estrictamente vía `asignaciones` de ese cliente (lo que ya se le asignó alguna vez, incluyendo el programa vigente en edición si ya fue asignado); un programa recién creado con "Armar rutina" que todavía no pasó por `/asignar` **no aparece en esta lista** hasta que se asigna — es consistente con el modelo, aunque distinto del prototipo estático del handoff. "Armar rutina" crea el programa y navega directo al builder, sin necesidad de que aparezca antes en esta lista.
+**Nota de diseño (ajustada tras auditoría):** el README del handoff muestra en la ficha una lista de "Rutinas de `<nombre>`" que incluye programas en estado `En edición` (`BORRADOR`, sin asignar formalmente todavía). "Armar rutina" llama a `POST /api/coach/programas` pasando `clienteId: cliente.id` (Task 2 ya acepta ese campo y crea la `AsignacionPrograma` en el mismo paso) — así el programa recién creado aparece de inmediato en `cliente.asignaciones` con estado `En edición`, coincidiendo con el prototipo del handoff, en vez de quedar invisible hasta pasar por `/asignar`. `/asignar` (Task 7/15) sigue existiendo para sumar clientes adicionales al mismo programa después.
 
 - [ ] **Step 1: Escribir el componente**
 
@@ -2571,7 +2618,13 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
     try {
       const res = await fetch("/api/coach/programas", {
         method: "POST",
-        body: JSON.stringify({ nombre: "Nuevo programa", objetivo: cliente?.objetivo ?? "", frecuencia: "5 días semanales", semanas: 4 }),
+        body: JSON.stringify({
+          nombre: "Nuevo programa",
+          objetivo: cliente?.objetivo ?? "",
+          frecuencia: "5 días semanales",
+          semanas: 4,
+          clienteId: cliente?.id,
+        }),
       });
       const data = await res.json();
       if (res.ok) vals.goBuilder(data.programa.id);
@@ -3717,7 +3770,9 @@ Ahora, reemplazar el bloque `{vals.tabRutina && (...)}` completo por:
     ) : (() => {
       const dias = ORDEN_SEMANA.map((ds) => miRutina.programa.dias.find((d) => d.diaSemana === ds)).filter((d): d is DiaVista => !!d && !d.descanso);
       const diaActivo = dias[vals.diaClienteSel] ?? dias[0];
-      const semanaActual = 1;
+      const msPorSemana = 7 * 24 * 60 * 60 * 1000;
+      const semanasTranscurridas = Math.floor((Date.now() - new Date(miRutina.asignadoEn).getTime()) / msPorSemana);
+      const semanaActual = Math.min(Math.max(semanasTranscurridas + 1, 1), miRutina.programa.semanas);
       return (
         <div>
           <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
@@ -3797,7 +3852,7 @@ Ahora, reemplazar el bloque `{vals.tabRutina && (...)}` completo por:
 )}
 ```
 
-Nota: `semanaActual` queda fijo en `1` como criterio simple para esta v1 (el spec no define cómo el cliente elige a qué semana del mesociclo corresponde "hoy" — eso requeriría lógica de fechas que no está en el spec §4/§8). Documentado para que quien continúe el trabajo pueda reemplazarlo por un cálculo real basado en `asignadoEn` si el usuario lo pide en una iteración futura.
+Nota (ajuste post-revisión, corrige la discrepancia #6 del self-review): `semanaActual` se calcula desde `AsignacionPrograma.asignadoEn` — semanas completas transcurridas desde la asignación, acotado entre `1` y `programa.semanas` (para que un programa vencido no muestre una semana fuera de rango ni una fecha futura muestre 0). Es un cálculo simple por diseño: no contempla pausas ni reprogramaciones manuales del mesociclo, que quedan fuera de alcance de este spec.
 
 - [ ] **Step 4: Wirear las pantallas nuevas en `components/BetoTrainingApp.tsx`**
 
@@ -3998,11 +4053,11 @@ git commit -m "test: e2e del flujo completo de constructor de rutinas y asignaci
 
 **Criterios propios no explícitos en el spec o el handoff (para que el usuario los audite):**
 1. **Series/descanso constantes al progresar semanas** (Task 2): el spec §5 solo define la progresión de `pct`/`reps`; `series`/`descanso` se heredan de la semana 1 del bloque tanto al crear el bloque como al agregar una semana nueva.
-2. **Un programa `BORRADOR` sin asignar no aparece en ninguna ficha** (Task 12): consecuencia directa de que `AsignacionPrograma` (spec §4) es la única fuente de "qué cliente tiene qué programa" — el handoff muestra un prototipo estático donde un programa "en edición" ya aparece en la ficha de un cliente, pero eso no es sostenible con el modelo M:N real sin agregar un campo fuera de spec.
+2. ~~Un programa `BORRADOR` sin asignar no aparece en ninguna ficha~~ — **corregido tras auditoría**: `POST /api/coach/programas` (Task 2) ahora acepta `clienteId` opcional y crea la `AsignacionPrograma` junto con el programa cuando se arma desde la ficha de un cliente puntual, así el programa aparece ahí desde `BORRADOR`, coincidiendo con el prototipo del handoff. La asignación masiva (Task 15) sigue siendo el camino para sumar clientes adicionales al mismo programa después.
 3. **"Marcar como hecho" en Mi rutina** (Task 8 y Task 17): el handoff rediseña "Mi rutina" como solo lectura, pero `BloqueCompletado` (spec §4) no tiene otra fuente de datos posible — se agregó un control mínimo no descripto en el handoff para que el gráfico de cumplimiento de la ficha (spec §4, Task 4/12) tenga datos reales.
 4. **"Asignación masiva" deshabilitado sin `programaIdActivo`** (Task 11): el spec no define un endpoint para listar todos los programas del entrenador fuera del contexto de un cliente o un id puntual; en vez de inventarlo, el botón exige que ya exista un programa en contexto.
 5. **"Trabajo en carrera" del widget de volumen semanal muestra "—"** (Task 13): el modelo de datos (spec §4) no tiene un campo de distancia por bloque; se documenta el dato como no disponible en vez de simular un número.
-6. **`semanaActual` fijo en 1 en "Mi rutina" del cliente** (Task 17): el spec no define cómo derivar a qué semana del mesociclo corresponde "hoy" a partir de `AsignacionPrograma.asignadoEn` — se deja como criterio simple documentado, señalado como mejora futura.
+6. ~~`semanaActual` fijo en 1 en "Mi rutina" del cliente~~ — **corregido tras auditoría**: ahora se calcula desde `AsignacionPrograma.asignadoEn` (semanas completas transcurridas, acotado a `[1, programa.semanas]`, Task 17). Sigue sin contemplar pausas o reprogramaciones manuales — eso queda fuera de alcance.
 7. **Resolución de `clienteId` real por *match* de nombre en "Clientes que necesitan atención"** (Task 17): el mock de `useBetoApp.ts` no tiene `id`; en vez de reescribir datos de Booking+Pagos (fuera de alcance de este spec), se resuelve el id contra `GET /api/coach/clientes` por nombre.
 
 ---
