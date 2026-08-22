@@ -1,0 +1,17 @@
+services:
+  db-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: beto
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: beto_training_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  maildev-test:
+    image: maildev/maildev
+    ports:
+      - "1080:1080"
+      - "1025:1025"
