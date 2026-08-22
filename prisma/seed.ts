@@ -1,7 +1,65 @@
 import { prisma } from "../lib/db";
 import { hashPassword } from "../lib/auth/hash";
+import { pesosACentavos } from "../lib/dinero";
+
+const SERVICIOS_SEED = [
+  { slug: "personal", nombre: "Personalizado 1 a 1", tag: "Estrella", duracionMin: 60, precioPesos: 22000, cupoMax: 1 },
+  { slug: "funcional", nombre: "Funcional / HIIT", tag: "Grupal", duracionMin: 50, precioPesos: 12000, cupoMax: 8 },
+  { slug: "musculacion", nombre: "Musculación", tag: "Fuerza", duracionMin: 75, precioPesos: 15000, cupoMax: 8 },
+  { slug: "outdoor", nombre: "Outdoor / Running", tag: "Aire libre", duracionMin: 60, precioPesos: 10000, cupoMax: 8 },
+  { slug: "online", nombre: "Rutinas grabadas", tag: "Online", duracionMin: 0, precioPesos: 9000, cupoMax: 999 },
+  { slug: "evaluacion", nombre: "Evaluación inicial", tag: "Sin cargo", duracionMin: 45, precioPesos: 0, cupoMax: 1 },
+];
+
+async function seedServiciosYHorarios() {
+  const servicios: Record<string, { id: string }> = {};
+  for (const s of SERVICIOS_SEED) {
+    servicios[s.slug] = await prisma.servicio.upsert({
+      where: { slug: s.slug },
+      update: { nombre: s.nombre, tag: s.tag, duracionMin: s.duracionMin, precio: pesosACentavos(s.precioPesos), cupoMax: s.cupoMax },
+      create: {
+        slug: s.slug,
+        nombre: s.nombre,
+        tag: s.tag,
+        duracionMin: s.duracionMin,
+        precio: pesosACentavos(s.precioPesos),
+        cupoMax: s.cupoMax,
+      },
+    });
+  }
+
+  const HORARIOS_SEED: { slug: string; diaSemana: number; horaInicio: string }[] = [
+    { slug: "outdoor", diaSemana: 2, horaInicio: "07:00" },
+    { slug: "outdoor", diaSemana: 4, horaInicio: "07:00" },
+    { slug: "funcional", diaSemana: 1, horaInicio: "19:00" },
+    { slug: "funcional", diaSemana: 3, horaInicio: "19:00" },
+    { slug: "musculacion", diaSemana: 1, horaInicio: "18:00" },
+    { slug: "musculacion", diaSemana: 3, horaInicio: "18:00" },
+    { slug: "musculacion", diaSemana: 5, horaInicio: "18:00" },
+    { slug: "personal", diaSemana: 2, horaInicio: "09:00" },
+    { slug: "personal", diaSemana: 4, horaInicio: "09:00" },
+    { slug: "personal", diaSemana: 6, horaInicio: "10:00" },
+    { slug: "evaluacion", diaSemana: 3, horaInicio: "12:00" },
+  ];
+
+  for (const h of HORARIOS_SEED) {
+    const servicio = servicios[h.slug];
+    const existente = await prisma.horarioRecurrente.findFirst({
+      where: { servicioId: servicio.id, diaSemana: h.diaSemana, horaInicio: h.horaInicio },
+    });
+    if (!existente) {
+      await prisma.horarioRecurrente.create({
+        data: { servicioId: servicio.id, diaSemana: h.diaSemana, horaInicio: h.horaInicio },
+      });
+    }
+  }
+
+  console.log("Servicios y horarios recurrentes seedeados.");
+}
 
 async function main() {
+  await seedServiciosYHorarios();
+
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) {
