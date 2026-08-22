@@ -19,7 +19,7 @@ describe("POST /api/auth/registro", () => {
       method: "POST",
       body: JSON.stringify({ email: "nueva@example.com", password: "Password123", nombre: "Nueva Cliente" }),
     });
-    const res = await POST(req as any);
+    const res = await POST(req as unknown as Request);
     expect(res.status).toBe(201);
 
     const user = await prisma.user.findUnique({ where: { email: "nueva@example.com" }, include: { cliente: true } });
@@ -34,7 +34,7 @@ describe("POST /api/auth/registro", () => {
       method: "POST",
       body: JSON.stringify({ email: "corta@example.com", password: "abc123", nombre: "X" }),
     });
-    const res = await POST(req as any);
+    const res = await POST(req as unknown as Request);
     expect(res.status).toBe(400);
   });
 });
@@ -46,7 +46,7 @@ describe("GET /api/auth/verificar-email", () => {
       new Request("http://localhost/api/auth/registro", {
         method: "POST",
         body: JSON.stringify({ email: "verificar@example.com", password: "Password123", nombre: "Y" }),
-      }) as any
+      }) as unknown as Request
     );
     const user = await prisma.user.findUniqueOrThrow({ where: { email: "verificar@example.com" } });
     const tokenRow = await prisma.emailVerificationToken.findFirstOrThrow({ where: { userId: user.id } });

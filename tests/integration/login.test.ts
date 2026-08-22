@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../../lib/db";
 import { hashPassword } from "../../lib/auth/hash";
-import { signIn } from "../../lib/auth";
+import { credentialsLogin } from "../../lib/auth/authorize";
 import { logAudit } from "../../lib/auth/audit";
 
 const EMAIL = "login-test@example.com";
@@ -22,11 +22,10 @@ beforeEach(async () => {
   });
 });
 
-describe("login", () => {
+describe("credentialsLogin", () => {
   it("falla con contraseña incorrecta y registra LOGIN_FAILED", async () => {
-    await expect(
-      signIn("credentials", { email: EMAIL, password: "incorrecta", redirect: false })
-    ).rejects.toThrow();
+    const result = await credentialsLogin({ email: EMAIL, password: "incorrecta", ip: "9.9.9.9" });
+    expect(result).toBeNull();
     const logs = await prisma.auditLog.findMany({ where: { action: "LOGIN_FAILED" } });
     expect(logs).toHaveLength(1);
   });
@@ -36,13 +35,13 @@ describe("login", () => {
     for (let i = 0; i < max; i++) {
       await logAudit({ email: EMAIL, action: "LOGIN_FAILED", ip: "9.9.9.9" });
     }
-    await expect(
-      signIn("credentials", { email: EMAIL, password: PASSWORD, redirect: false })
-    ).rejects.toThrow();
+    const result = await credentialsLogin({ email: EMAIL, password: PASSWORD, ip: "9.9.9.9" });
+    expect(result).toBeNull();
   });
 
   it("crea una fila Session en la base al loguearse correctamente", async () => {
-    await signIn("credentials", { email: EMAIL, password: PASSWORD, redirect: false });
+    const result = await credentialsLogin({ email: EMAIL, password: PASSWORD, ip: "9.9.9.9" });
+    expect(result).not.toBeNull();
     const sessions = await prisma.session.findMany({ where: { user: { email: EMAIL } } });
     expect(sessions).toHaveLength(1);
   });

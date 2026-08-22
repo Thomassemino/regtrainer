@@ -11,8 +11,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:backup": "tsx scripts/backup.ts",
-    "test": "vitest run tests/unit",
-    "test:integration": "DATABASE_URL=postgresql://beto:test@localhost:5433/beto_training_test SMTP_HOST=localhost SMTP_PORT=1025 vitest run tests/integration",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test"
   },
   "dependencies": {
