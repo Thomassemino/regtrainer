@@ -1,6 +1,18 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
+import type { ClienteFilaApi } from "@/lib/types";
 
 export default function Coach({ vals }: { vals: BetoVals }) {
+  const [clientesReales, setClientesReales] = useState<ClienteFilaApi[]>([]);
+
+  useEffect(() => {
+    fetch("/api/coach/clientes").then((r) => r.json()).then((d) => setClientesReales(d.clientes ?? []));
+  }, []);
+
+  const idPorNombre = (nombre: string) => clientesReales.find((c) => c.nombre === nombre)?.id ?? null;
+
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
@@ -8,7 +20,10 @@ export default function Coach({ vals }: { vals: BetoVals }) {
           <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Modo entrenador</div>
           <h1 style={{ fontSize: 38, letterSpacing: "-0.03em", margin: "8px 0 0" }}>Panel de Beto</h1>
         </div>
-        <button onClick={vals.goCuenta} className="btn btn-secondary">Volver a la vista cliente</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={vals.goClientes} className="btn btn-primary"><i className="ph ph-squares-four" /> Constructor de rutinas</button>
+          <button onClick={vals.goCuenta} className="btn btn-secondary">Volver a la vista cliente</button>
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
         {vals.coachKpis.map((k) => (
@@ -49,16 +64,25 @@ export default function Coach({ vals }: { vals: BetoVals }) {
         <div>
           <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Clientes que necesitan atención</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {vals.clientes.map((c) => (
-              <div key={c.nombre} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)" }}>
-                <span style={{ width: 34, height: 34, flex: "none", borderRadius: "50%", background: "var(--color-accent-800)", color: "var(--color-accent-100)", display: "grid", placeItems: "center", fontSize: 12.5, fontWeight: 500 }}>{c.ini}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{c.nombre}</div>
-                  <div style={{ fontSize: 12, opacity: .55 }}>{c.motivo}</div>
+            {vals.clientes.map((c) => {
+              const clienteId = idPorNombre(c.nombre);
+              return (
+                <div key={c.nombre} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)" }}>
+                  <span style={{ width: 34, height: 34, flex: "none", borderRadius: "50%", background: "var(--color-accent-800)", color: "var(--color-accent-100)", display: "grid", placeItems: "center", fontSize: 12.5, fontWeight: 500 }}>{c.ini}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>{c.nombre}</div>
+                    <div style={{ fontSize: 12, opacity: .55 }}>{c.motivo}</div>
+                  </div>
+                  <button
+                    onClick={() => clienteId && vals.goFicha(clienteId)}
+                    disabled={!clienteId}
+                    className="btn btn-secondary"
+                  >
+                    {c.cta}
+                  </button>
                 </div>
-                <button className="btn btn-secondary">{c.cta}</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "30px 0 12px" }}>Últimos pagos</h3>
           <table className="table">

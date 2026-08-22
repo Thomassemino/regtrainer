@@ -23,8 +23,10 @@ export default function Builder({ vals }: { vals: BetoVals }) {
   };
 
   useEffect(() => {
-    cargar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!vals.programaIdActivo) return;
+    fetch(`/api/coach/programas/${vals.programaIdActivo}`)
+      .then((r) => r.json())
+      .then((data) => setPrograma(data.programa ?? null));
   }, [vals.programaIdActivo]);
 
   const sensors = useSensors(

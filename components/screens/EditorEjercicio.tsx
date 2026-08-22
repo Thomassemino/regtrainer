@@ -125,6 +125,13 @@ export default function EditorEjercicio({
           value={detalle}
           onChange={(e) => setDetalle(e.target.value)}
         />
+        <input
+          className="input"
+          style={{ maxWidth: 420, margin: "0 auto 16px", display: "block", textAlign: "center" }}
+          placeholder="Meta (p. ej. 4 ejercicios)"
+          value={meta}
+          onChange={(e) => setMeta(e.target.value)}
+        />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
           <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(233,233,237,.14)", background: "var(--color-surface)", textAlign: "center" }}>

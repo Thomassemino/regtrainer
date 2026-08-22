@@ -28,7 +28,7 @@ beforeEach(async () => {
   const userA = await prisma.user.create({ data: { email: CLIENTE_A_EMAIL, passwordHash: await hashPassword("Password123"), role: "CLIENTE", emailVerified: new Date() } });
   const userB = await prisma.user.create({ data: { email: CLIENTE_B_EMAIL, passwordHash: await hashPassword("Password123"), role: "CLIENTE", emailVerified: new Date() } });
   const clienteA = await prisma.cliente.create({ data: { userId: userA.id, nombre: "Camila", iniciales: "CF", objetivo: "x" } });
-  const clienteB = await prisma.cliente.create({ data: { userId: userB.id, nombre: "Martín", iniciales: "MD", objetivo: "x" } });
+  await prisma.cliente.create({ data: { userId: userB.id, nombre: "Martín", iniciales: "MD", objetivo: "x" } });
   clienteAId = clienteA.id;
   clienteBUserId = userB.id;
   clienteAUserId = userA.id;

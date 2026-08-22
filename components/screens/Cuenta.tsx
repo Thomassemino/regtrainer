@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import ImageSlot from "@/components/ImageSlot";
 
+function calcularSemanaActual(asignadoEnIso: string, semanasDelPrograma: number): number {
+  const msPorSemana = 7 * 24 * 60 * 60 * 1000;
+  const transcurridas = Math.floor((Date.now() - new Date(asignadoEnIso).getTime()) / msPorSemana);
+  return Math.min(Math.max(transcurridas + 1, 1), semanasDelPrograma);
+}
+
 interface SesionRow {
   id: string;
   ip: string | null;
@@ -12,6 +18,14 @@ interface SesionRow {
   expires: string;
 }
 
+interface FilaSobrecargaVista { semana: number; series: number; reps: number; pct: number; descanso: string; }
+interface BloqueVista { id: string; tipo: string; foco: string; titulo: string; detalle: string; meta: string | null; sobrecarga: FilaSobrecargaVista[]; }
+interface DiaVista { id: string; diaSemana: number; descanso: boolean; calentamiento: string | null; bloques: BloqueVista[]; }
+interface AsignacionVista { id: string; asignadoEn: string; programa: { nombre: string; semanas: number; dias: DiaVista[] } }
+
+const NOMBRES_DIA: Record<number, string> = { 0: "Domingo", 1: "Lunes", 2: "Martes", 3: "Miércoles", 4: "Jueves", 5: "Viernes", 6: "Sábado" };
+const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
 export default function Cuenta({ vals }: { vals: BetoVals }) {
   const [sesiones, setSesiones] = useState<SesionRow[]>([]);
   const [actualId, setActualId] = useState<string>("");
@@ -19,6 +33,8 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
   const [actual, setActual] = useState("");
   const [nueva, setNueva] = useState("");
   const [passMsg, setPassMsg] = useState("");
+  const [miRutina, setMiRutina] = useState<AsignacionVista | null>(null);
+  const [completados, setCompletados] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/cuenta/sesiones")
@@ -55,6 +71,18 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
     } else {
       setPassMsg(data.error ?? "No pudimos cambiar la contraseña");
     }
+  };
+
+  useEffect(() => {
+    fetch("/api/cuenta/mi-rutina")
+      .then((r) => r.json())
+      .then((data) => setMiRutina(data.asignacion ?? null));
+  }, []);
+
+  const marcarHecho = async (bloqueId: string, semana: number) => {
+    const clave = `${bloqueId}-${semana}`;
+    setCompletados((c) => ({ ...c, [clave]: true }));
+    await fetch("/api/cuenta/mi-rutina/completar", { method: "POST", body: JSON.stringify({ bloqueId, semana }) });
   };
 
   return (
@@ -112,30 +140,90 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
 
         {vals.tabRutina && (
           <div>
-            <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
-            <p style={{ fontSize: 13.5, opacity: .6, margin: "0 0 18px" }}>Fuerza · Bloque 2 de 4 · semana 5 · asignada por Beto el 03/08</p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-              {vals.diasRutina.map((d) => (
-                <button key={d.label} onClick={d.onClick} style={{ cursor: "pointer", fontSize: 13, padding: "9px 15px", borderRadius: 99, border: `1px solid ${d.bd}`, background: d.bg, color: d.fg }}>{d.label}</button>
-              ))}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 720 }}>
-              {vals.ejercicios.map((e) => (
-                <div key={e.nombre} onClick={e.onToggle} style={{ cursor: "pointer", display: "flex", gap: 13, alignItems: "center", padding: "14px 16px", borderRadius: 12, background: "var(--color-surface)" }}>
-                  <span style={{ width: 22, height: 22, flex: "none", borderRadius: 6, border: `1.5px solid ${e.chkBd}`, background: e.chkBg, display: "grid", placeItems: "center" }}>
-                    <i className="ph ph-check" style={{ fontSize: 13, color: e.chkFg }} />
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 500, textDecoration: e.deco }}>{e.nombre}</div>
-                    <div style={{ fontSize: 12.5, opacity: .55, marginTop: 2 }}>{e.detalle}</div>
+            {!miRutina ? (
+              <div>
+                <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
+                <p style={{ fontSize: 13.5, opacity: .6 }}>Todavía no tenés un programa asignado. Cuando Beto te asigne uno, vas a verlo acá.</p>
+              </div>
+            ) : (() => {
+              const dias = ORDEN_SEMANA.map((ds) => miRutina.programa.dias.find((d) => d.diaSemana === ds)).filter((d): d is DiaVista => !!d && !d.descanso);
+              const diaActivo = dias[vals.diaClienteSel] ?? dias[0];
+              const semanaActual = calcularSemanaActual(miRutina.asignadoEn, miRutina.programa.semanas);
+              return (
+                <div>
+                  <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
+                  <p style={{ fontSize: 13.5, opacity: .6, margin: "0 0 18px" }}>
+                    {miRutina.programa.nombre} · {miRutina.programa.semanas} semanas · asignada por Beto el {new Date(miRutina.asignadoEn).toLocaleDateString("es-AR")}
+                  </p>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                    {dias.map((d, i) => {
+                      const on = vals.diaClienteSel === i;
+                      return (
+                        <button
+                          key={d.id}
+                          onClick={() => vals.setDiaClienteSel(i)}
+                          style={{ cursor: "pointer", fontSize: 13, padding: "9px 15px", borderRadius: 99, border: `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`, background: on ? "rgba(145,132,217,.16)" : "transparent", color: on ? "#d2cefd" : "#e9e9ed" }}
+                        >
+                          {NOMBRES_DIA[d.diaSemana]}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <button className="btn btn-ghost"><i className="ph ph-play-circle" style={{ fontSize: 18 }} /> Ver video</button>
+
+                  {diaActivo && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 760 }}>
+                      {diaActivo.calentamiento && (
+                        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--color-surface)" }}>
+                          <div style={{ fontSize: 11, textTransform: "uppercase", opacity: .45 }}>Calentamiento</div>
+                          <div style={{ fontSize: 13.5, opacity: .8, marginTop: 4 }}>{diaActivo.calentamiento}</div>
+                        </div>
+                      )}
+                      {diaActivo.bloques.map((b, i) => {
+                        const fila = b.sobrecarga.find((f) => f.semana === semanaActual);
+                        const hecho = !!completados[`${b.id}-${semanaActual}`];
+                        return (
+                          <div key={b.id} style={{ padding: "16px 18px", borderRadius: 12, background: "var(--color-surface)" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                              <span style={{ width: 22, height: 22, borderRadius: 6, background: "var(--color-accent-800)", color: "var(--color-accent-100)", display: "grid", placeItems: "center", fontSize: 11.5 }}>{i + 1}</span>
+                              <span className="tag tag-accent">{b.tipo}</span>
+                              {b.meta && <span style={{ fontSize: 10.5, opacity: .4 }}>{b.meta}</span>}
+                              <span style={{ marginLeft: "auto", fontSize: 9.5, textTransform: "uppercase", opacity: .5 }}>{b.foco}</span>
+                            </div>
+                            <div style={{ fontSize: 15, fontWeight: 500 }}>{b.titulo}</div>
+                            <div style={{ fontSize: 13, opacity: .6, marginBottom: 10 }}>{b.detalle}</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                              {[
+                                { label: "Series", valor: b.tipo === "TRADICIONAL" ? String(fila?.series ?? "—") : "—" },
+                                { label: "Rep", valor: b.tipo === "TRADICIONAL" ? String(fila?.reps ?? "—") : "—" },
+                                { label: "Carga", valor: b.tipo === "TRADICIONAL" ? `${fila?.pct ?? "—"}%` : "RPE 8" },
+                                { label: "Descanso", valor: fila?.descanso ?? "—" },
+                              ].map((campo) => (
+                                <div key={campo.label} style={{ padding: 9, borderRadius: 10, border: "1px solid rgba(233,233,237,.12)", textAlign: "center" }}>
+                                  <div style={{ fontSize: 10, textTransform: "uppercase", opacity: .45 }}>{campo.label}</div>
+                                  <div style={{ fontSize: 15 }}>{campo.valor}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              onClick={() => marcarHecho(b.id, semanaActual)}
+                              disabled={hecho}
+                              className="btn btn-ghost"
+                              style={{ marginTop: 10 }}
+                            >
+                              <i className="ph ph-check-circle" /> {hecho ? "Hecho" : "Marcar como hecho"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 16, padding: 15, borderRadius: 12, border: "1px dashed var(--color-neutral-700)", fontSize: 13, lineHeight: 1.5, opacity: .78, maxWidth: 720 }}>
+                    <b>Nota de Beto:</b> si una serie te sale con técnica pobre, quedate en la carga de la semana anterior: la progresión es una guía, no una obligación.
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 16, padding: 15, borderRadius: 12, border: "1px dashed var(--color-neutral-700)", fontSize: 13, lineHeight: 1.5, opacity: .78, maxWidth: 720, textWrap: "pretty" }}>
-              <b>Nota de Beto:</b> si el press te queda liviano subí 2,5 kg y avisame por WhatsApp cómo salió.
-            </div>
+              );
+            })()}
           </div>
         )}
 

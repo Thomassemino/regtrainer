@@ -12,6 +12,8 @@ const TEMAS: { id: TemaPdf; nombre: string; sub: string; icono: string; fondo: s
 export default function ExportPdf({ vals }: { vals: BetoVals }) {
   const descargar = () => {
     if (!vals.programaIdActivo) return;
+    // Navegación intencional a un endpoint que descarga el PDF (no una página interna).
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/api/coach/programas/${vals.programaIdActivo}/pdf?tema=${vals.temaPdfSel}`;
     vals.showToast("PDF generado con la marca de Beto Training");
   };

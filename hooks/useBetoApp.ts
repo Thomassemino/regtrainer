@@ -355,8 +355,6 @@ export function useBetoApp() {
       { fecha: "07/07/2026", concepto: "Clase personalizada", medio: "Mercado Pago", importe: money(22000) },
       { fecha: "02/06/2026", concepto: "Bono 4 clases", medio: "Visa •••3704", importe: money(43000) },
     ],
-    diasRutina: [] as { label: string; bg: string; bd: string; fg: string; onClick: () => void }[],
-    ejercicios: [] as { nombre: string; detalle: string; deco: string; chkBd: string; chkBg: string; chkFg: string; onToggle: () => void }[],
     notis: [
       { icon: "ph-calendar-check", titulo: "Recordatorio: Funcional hoy 19:00", texto: "Llegá 10 minutos antes para la entrada en calor.", cuando: "Hace 20 min", bg: "rgba(145,132,217,.10)" },
       { icon: "ph-ticket", titulo: "Te quedan 6 clases del bono", texto: "Vence el 30/09. Renovalo antes con 10% de descuento.", cuando: "Ayer", bg: SUR },
@@ -368,7 +366,7 @@ export function useBetoApp() {
       { k: "Ingresos del mes", v: money(1840000), d: "+18% vs julio" },
       { k: "Clases esta semana", v: "23", d: "86% de ocupación" },
       { k: "Clientes activos", v: "61", d: "+4 nuevos" },
-      { k: "Bonos por vencer", v: "7", d: "Conviene avisar" },
+      { k: "Rutinas sin actualizar", v: "7", d: "Conviene revisarlas" },
     ],
     agenda: [
       { hora: "07:00", clase: "Outdoor / Running", gente: "6 de 8 anotados", estado: "Cerrada", tagClass: "tag-neutral", marca: "#595d6c" },

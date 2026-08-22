@@ -9,6 +9,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
   const [clientes, setClientes] = useState<ClienteFilaApi[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [ahora] = useState(() => Date.now());
 
   useEffect(() => {
     fetch("/api/coach/clientes")
@@ -23,9 +24,9 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
     return clientes.filter((c) => c.nombre.toLowerCase().includes(q) || c.objetivo.toLowerCase().includes(q));
   }, [clientes, busqueda]);
 
-  const formatFecha = (iso: string | null) => {
+  const formatFecha = (iso: string | null, ahoraS: number) => {
     if (!iso) return "Sin plan";
-    const dias = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+    const dias = Math.floor((ahoraS - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
     if (dias <= 0) return "Hoy";
     if (dias === 1) return "Hace 1 día";
     if (dias < 7) return `Hace ${dias} días`;
@@ -89,7 +90,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
                 </td>
                 <td style={{ fontSize: 13.5, opacity: 0.75 }}>{c.plan}</td>
                 <td><span className={`tag ${c.programaEstado ? "tag-accent" : "tag-outline"}`}>{c.programaActual}</span></td>
-                <td style={{ fontSize: 13, opacity: 0.6 }}>{formatFecha(c.actualizadoEn)}</td>
+                <td style={{ fontSize: 13, opacity: 0.6 }}>{formatFecha(c.actualizadoEn, ahora)}</td>
                 <td style={{ textAlign: "right" }}>
                   <button onClick={() => vals.goFicha(c.id)} className="btn btn-secondary">Abrir ficha</button>
                 </td>
