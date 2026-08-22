@@ -3,11 +3,17 @@ import { resetearPassword } from "../../../../lib/auth/reset-password";
 
 const Schema = z.object({
   token: z.string().min(1),
-  password: z.string().min(10).regex(/[a-zA-Z]/).regex(/[0-9]/),
+  password: z.string().min(10).max(128).regex(/[a-zA-Z]/).regex(/[0-9]/),
 });
 
 export async function POST(req: Request) {
-  const parsed = Schema.safeParse(await req.json());
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Datos inválidos" }, { status: 400 });
+  }
+  const parsed = Schema.safeParse(body);
   if (!parsed.success) {
     return Response.json({ error: "Datos inválidos" }, { status: 400 });
   }
