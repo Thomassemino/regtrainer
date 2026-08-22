@@ -33,11 +33,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  cliente       Cliente?
-  sessions      Session[]
-  emailTokens   EmailVerificationToken[]
-  resetTokens   PasswordResetToken[]
-  auditLogs     AuditLog[]
+  cliente            Cliente?
+  sessions           Session[]
+  emailTokens        EmailVerificationToken[]
+  resetTokens        PasswordResetToken[]
+  auditLogs          AuditLog[]
+  programasCreados   Programa[]
 }
 
 model Cliente {
@@ -54,6 +55,8 @@ model Cliente {
   notaMedica String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  asignaciones AsignacionPrograma[]
 }
 
 model Session {
@@ -106,4 +109,107 @@ model AuditLog {
 
   @@index([email, action, createdAt])
   @@index([ip, action, createdAt])
+}
+
+enum EstadoPrograma {
+  BORRADOR
+  ASIGNADO
+  COMPLETADO
+  ARCHIVADO
+}
+
+enum TipoBloque {
+  TRADICIONAL
+  SECUENCIA
+  SUPERSERIE
+  EMOM
+  POR_TIEMPO
+}
+
+enum Foco {
+  TECNICA
+  RITMO
+  MAXIMO_ESFUERZO
+}
+
+model Programa {
+  id           String               @id @default(cuid())
+  nombre       String
+  semanas      Int
+  objetivo     String
+  frecuencia   String
+  estado       EstadoPrograma       @default(BORRADOR)
+  creadoPorId  String
+  creadoPor    User                 @relation(fields: [creadoPorId], references: [id])
+  dias         DiaPrograma[]
+  asignaciones AsignacionPrograma[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model DiaPrograma {
+  id            String     @id @default(cuid())
+  programaId    String
+  programa      Programa   @relation(fields: [programaId], references: [id], onDelete: Cascade)
+  diaSemana     Int
+  descanso      Boolean    @default(false)
+  calentamiento String?
+  bloques       Bloque[]
+
+  @@unique([programaId, diaSemana])
+}
+
+model Bloque {
+  id          String             @id @default(cuid())
+  diaId       String
+  dia         DiaPrograma        @relation(fields: [diaId], references: [id], onDelete: Cascade)
+  orden       Int
+  tipo        TipoBloque
+  foco        Foco
+  titulo      String
+  detalle     String
+  meta        String?
+  sobrecarga  FilaSobrecarga[]
+  completados BloqueCompletado[]
+
+  @@index([diaId, orden])
+}
+
+model FilaSobrecarga {
+  id        String @id @default(cuid())
+  bloqueId  String
+  bloque    Bloque @relation(fields: [bloqueId], references: [id], onDelete: Cascade)
+  semana    Int
+  series    Int
+  reps      Int
+  pct       Int
+  descanso  String
+
+  @@unique([bloqueId, semana])
+}
+
+model AsignacionPrograma {
+  id                   String    @id @default(cuid())
+  programaId           String
+  programa             Programa  @relation(fields: [programaId], references: [id], onDelete: Cascade)
+  clienteId            String
+  cliente              Cliente   @relation(fields: [clienteId], references: [id])
+  asignadoEn           DateTime  @default(now())
+  mensajePersonalizado String?
+  temaPdf              String    @default("clean")
+  completados          BloqueCompletado[]
+
+  @@unique([programaId, clienteId])
+}
+
+model BloqueCompletado {
+  id           String             @id @default(cuid())
+  asignacionId String
+  asignacion   AsignacionPrograma @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+  bloqueId     String
+  bloque       Bloque             @relation(fields: [bloqueId], references: [id], onDelete: Cascade)
+  semana       Int
+  completadoEn DateTime           @default(now())
+
+  @@unique([asignacionId, bloqueId, semana])
 }
