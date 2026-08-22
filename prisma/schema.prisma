@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CLIENTE
+  ADMIN
+}
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  REGISTRO
+  EMAIL_VERIFICADO
+  PASSWORD_RESET_SOLICITADO
+  PASSWORD_RESET_COMPLETADO
+  SESION_REVOCADA
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(CLIENTE)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cliente       Cliente?
+  sessions      Session[]
+  emailTokens   EmailVerificationToken[]
+  resetTokens   PasswordResetToken[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+}
+
+model Cliente {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nombre     String
+  iniciales  String
+  objetivo   String
+  plan       String   @default("Sin plan")
+  frecuencia String?
+  nivel      String?
+  whatsapp   String?
+  notaMedica String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip           String?
+  userAgent    String?
+  expires      DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String?
+  action    AuditAction
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([email, action, createdAt])
+  @@index([ip, action, createdAt])
+}
