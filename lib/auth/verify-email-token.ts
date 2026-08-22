@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { Prisma } from "@prisma/client";
 import { logAudit } from "./audit";
 
 export async function verifyEmailToken(tokenHash: string): Promise<boolean> {
@@ -6,10 +7,26 @@ export async function verifyEmailToken(tokenHash: string): Promise<boolean> {
   if (!tokenRow || tokenRow.usedAt || tokenRow.expiresAt < new Date()) {
     return false;
   }
-  await prisma.$transaction([
-    prisma.emailVerificationToken.update({ where: { id: tokenRow.id }, data: { usedAt: new Date() } }),
-    prisma.user.update({ where: { id: tokenRow.userId }, data: { emailVerified: new Date() } }),
-  ]);
-  await logAudit({ userId: tokenRow.userId, action: "EMAIL_VERIFICADO" });
-  return true;
+  const ok = await prisma.$transaction(async (tx) => {
+    const claim = await tx.emailVerificationToken.updateMany({
+      where: { tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
+      data: { usedAt: new Date() },
+    });
+    if (claim.count === 0) {
+      return false;
+    }
+    try {
+      await tx.user.update({ where: { id: tokenRow.userId }, data: { emailVerified: new Date() } });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+        return false;
+      }
+      throw e;
+    }
+    return true;
+  });
+  if (ok) {
+    await logAudit({ userId: tokenRow.userId, action: "EMAIL_VERIFICADO" });
+  }
+  return ok;
 }

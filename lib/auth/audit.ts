@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { AuditAction } from "@prisma/client";
+import type { Prisma, AuditAction } from "@prisma/client";
 
 export async function logAudit(input: {
   userId?: string;
@@ -16,7 +16,7 @@ export async function logAudit(input: {
       action: input.action,
       ip: input.ip,
       userAgent: input.userAgent,
-      metadata: input.metadata as any,
+      metadata: (input.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
     },
   });
 }
