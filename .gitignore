@@ -43,3 +43,8 @@ next-env.d.ts
 
 # prisma generated
 /lib/generated/prisma
+
+# AI agent skills / tooling
+.agents/
+.claude/
+.windsurf/
