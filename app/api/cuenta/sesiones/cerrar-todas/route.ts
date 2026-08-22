@@ -3,7 +3,7 @@ import { cerrarTodasLasSesiones } from "../../../../../lib/auth/sesiones";
 
 export async function POST() {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user || !session.user.id) {
     return Response.json({ error: "No autenticado" }, { status: 401 });
   }
   await cerrarTodasLasSesiones(session.user.id);

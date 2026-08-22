@@ -1,7 +1,62 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import ImageSlot from "@/components/ImageSlot";
 
+interface SesionRow {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  expires: string;
+}
+
 export default function Cuenta({ vals }: { vals: BetoVals }) {
+  const [sesiones, setSesiones] = useState<SesionRow[]>([]);
+  const [actualId, setActualId] = useState<string>("");
+  const [cerrandoMsg, setCerrandoMsg] = useState("");
+  const [actual, setActual] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [passMsg, setPassMsg] = useState("");
+
+  useEffect(() => {
+    fetch("/api/cuenta/sesiones")
+      .then((r) => r.json())
+      .then((data) => {
+        setSesiones(data.sesiones ?? []);
+        setActualId(data.actualId ?? "");
+      })
+      .catch(() => {});
+  }, []);
+
+  const cerrarTodas = async () => {
+    setCerrandoMsg("");
+    const res = await fetch("/api/cuenta/sesiones/cerrar-todas", { method: "POST" });
+    if (res.ok) {
+      setCerrandoMsg("Sesión cerrada en todos los dispositivos");
+      await vals.logout();
+    }
+  };
+
+  const cambiarClave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassMsg("");
+    const res = await fetch("/api/cuenta/password", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actual, nueva }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setPassMsg("Contraseña actualizada");
+      setActual("");
+      setNueva("");
+    } else {
+      setPassMsg(data.error ?? "No pudimos cambiar la contraseña");
+    }
+  };
+
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px", display: "grid", gridTemplateColumns: "236px 1fr", gap: 28, alignItems: "start" }}>
       <div style={{ position: "sticky", top: 86, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -112,15 +167,50 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
         )}
 
         {vals.tabDatos && (
-          <div style={{ maxWidth: 560 }}>
-            <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis datos</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-              <div className="field"><label>Nombre y apellido</label><input className="input" defaultValue="Camila Ferreyra" readOnly /></div>
-              <div className="field"><label>Email</label><input className="input" defaultValue="camila.f@gmail.com" readOnly /></div>
-              <div className="field"><label>WhatsApp</label><input className="input" defaultValue="+54 9 11 6123-4488" readOnly /></div>
-              <div className="field"><label>Objetivo actual</label><input className="input" defaultValue="Volver a correr sin dolor de rodilla" readOnly /></div>
-              <div className="field"><label>Notas médicas para Beto</label><textarea className="input" readOnly defaultValue="Condromalacia rotuliana leve (2024). Sin impacto alto en días consecutivos." /></div>
-              <button className="btn btn-primary" style={{ alignSelf: "flex-start" }}>Guardar cambios</button>
+          <div style={{ maxWidth: 560, display: "flex", flexDirection: "column", gap: 24 }}>
+            <div>
+              <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis datos</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+                <div className="field"><label>Nombre y apellido</label><input className="input" defaultValue="Camila Ferreyra" readOnly /></div>
+                <div className="field"><label>Email</label><input className="input" defaultValue="camila.f@gmail.com" readOnly /></div>
+                <div className="field"><label>Objetivo actual</label><input className="input" defaultValue="Volver a correr sin dolor de rodilla" readOnly /></div>
+              </div>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Sesiones activas</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {sesiones.length === 0 && (
+                  <div style={{ fontSize: 13.5, opacity: .55 }}>Cargando sesiones…</div>
+                )}
+                {sesiones.map((s) => {
+                  const actual = s.id === actualId;
+                  return (
+                    <div key={s.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)", border: actual ? `1px solid ${"var(--color-accent)"}` : "1px solid transparent" }}>
+                      <i className="ph ph-device-mobile" style={{ fontSize: 18, color: actual ? "var(--color-accent)" : "rgba(233,233,237,.6)" }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>{s.userAgent || "Navegador"}{actual ? " · esta sesión" : ""}</div>
+                        <div style={{ fontSize: 12, opacity: .55, marginTop: 2 }}>{s.ip || "IP desconocida"} · {new Date(s.createdAt).toLocaleString("es-AR")}</div>
+                      </div>
+                      {actual && <span className="tag tag-accent">Actual</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+                <button onClick={cerrarTodas} className="btn btn-secondary" style={{ alignSelf: "flex-start" }}><i className="ph ph-sign-out" style={{ fontSize: 16 }} /> Cerrar en todos los dispositivos</button>
+                {cerrandoMsg && <div style={{ fontSize: 13, color: "#a9d39a" }}>{cerrandoMsg}</div>}
+              </div>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Cambiar contraseña</h3>
+              <form onSubmit={cambiarClave} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+                <div className="field"><label>Contraseña actual</label><input className="input" type="password" value={actual} onChange={(e) => setActual(e.target.value)} required /></div>
+                <div className="field"><label>Nueva contraseña</label><input className="input" type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} placeholder="Mínimo 10 caracteres, letras y números" required minLength={10} /></div>
+                {passMsg && <div style={{ fontSize: 13, color: passMsg === "Contraseña actualizada" ? "#a9d39a" : "#e5a3a3" }}>{passMsg}</div>}
+                <button className="btn btn-primary" style={{ alignSelf: "flex-start" }}>Guardar nueva contraseña</button>
+              </form>
             </div>
           </div>
         )}

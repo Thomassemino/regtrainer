@@ -46,14 +46,14 @@ export default function Login({ vals }: { vals: BetoVals }) {
           <div className="field"><label>Contraseña</label><input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required /></div>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <button type="button" onClick={() => {}} className="btn btn-ghost" style={{ fontSize: 12.5 }}>Olvidé mi contraseña</button>
+            <a href="/olvidar-password" className="btn btn-ghost" style={{ fontSize: 12.5 }}>Olvidé mi contraseña</a>
           </div>
 
           <div style={{ fontSize: 12.5, color: "#e5a3a3", display: vals.loginError ? "block" : "none" }}>{vals.loginError}</div>
 
           <button type="submit" disabled={loading} className="btn btn-primary btn-block" style={{ height: 44, fontSize: 15 }}>{vals.loginCta}</button>
 
-          {vals.esCliente && (
+          {!vals.auth && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5, opacity: .45 }}><span style={{ flex: 1, height: 1, background: "var(--color-divider)" }} />o<span style={{ flex: 1, height: 1, background: "var(--color-divider)" }} /></div>
               <div style={{ fontSize: 12.5, opacity: .65, textAlign: "center" }}>¿Primera vez? <a href="/registro">Creá tu cuenta en 1 minuto</a></div>

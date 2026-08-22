@@ -24,7 +24,7 @@ export default function BetoTrainingApp() {
       {vals.isConfirm && <Confirm vals={vals} />}
       {vals.isLogin && <Login vals={vals} />}
       {vals.isCuenta && <Cuenta vals={vals} />}
-      {vals.isCoach && <Coach vals={vals} />}
+      {vals.isCoach && vals.auth === "ADMIN" && <Coach vals={vals} />}
 
       <ToastBar vals={vals} />
     </div>

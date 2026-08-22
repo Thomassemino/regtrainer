@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
 import { AC, ACD, DIV, DOW, HORAS, PACKS, PH, RUTINA, SERVICIOS, SUR, money } from "@/lib/data";
 import type { AppState, Screen } from "@/lib/types";
@@ -34,10 +35,19 @@ const sel = (on: boolean) => ({
 
 export function useBetoApp() {
   const { data: session, status } = useSession();
-  const [state, setState] = useState<AppState>(initialState);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const params = useSearchParams();
+  const [state, setState] = useState<AppState>(() => ({ ...initialState, screen: "landing" }));
+  const [loginError, setLoginError] = useState("");
+  const prevAuth = useRef<string | null>(null);
+  const transitionNavigated = useRef(false);
 
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(() => {
+    if (status === "authenticated" && !session?.user) {
+      void nextAuthSignOut({ redirect: false });
+    }
+  }, [status, session]);
+
+  const auth = session?.user?.role ?? null;
 
   const set = useCallback((updater: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => {
     setState((s) => ({ ...s, ...(typeof updater === "function" ? updater(s) : updater) }));
@@ -58,9 +68,35 @@ export function useBetoApp() {
 
   const showToast = useCallback((t: string) => {
     set({ toast: t });
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => set({ toast: null }), 2400);
   }, [set]);
+
+  useEffect(() => {
+    if (!state.toast) return;
+    const id = setTimeout(() => set({ toast: null }), 2400);
+    return () => clearTimeout(id);
+  }, [state.toast, set]);
+
+  useEffect(() => {
+    const wasNull = prevAuth.current === null && auth !== null;
+    if (wasNull) {
+      const admin = auth === "ADMIN";
+      go(admin ? "coach" : "cuenta");
+      showToast(admin ? "Bienvenido, Beto" : "Hola de nuevo");
+      transitionNavigated.current = true;
+    }
+    prevAuth.current = auth;
+  }, [auth, go, showToast]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user) return;
+    if (transitionNavigated.current) return;
+    if (params.get("screen") !== "coach" || session.user.role !== "ADMIN") return;
+    if (state.screen !== "landing") return;
+    const id = setTimeout(() => {
+      setState((s) => (s.screen === "landing" ? { ...s, screen: "coach" } : s));
+    }, 0);
+    return () => clearTimeout(id);
+  }, [status, session, params, state.screen, setState]);
 
   const st = state;
   const s = svc(st.servicio);
@@ -69,7 +105,6 @@ export function useBetoApp() {
   const packSel = PACKS.find((p) => p.id === st.packSel) ?? null;
   const total = packSel ? packSel.precio : st.metodo === "bono" ? 0 : s.precio;
 
-  const auth = session?.user?.role ?? null;
   const esCliente = auth === "CLIENTE";
   const esAdmin = auth === "ADMIN";
 
@@ -88,10 +123,14 @@ export function useBetoApp() {
   const entrar = async (email: string, password: string) => {
     const result = await nextAuthSignIn("credentials", { email, password, redirect: false });
     if (!result || result.error) {
+      setLoginError("Email o contraseña incorrectos");
       return;
     }
-    go(st.loginRolUI === "admin" ? "coach" : "cuenta");
-    showToast(st.loginRolUI === "admin" ? "Bienvenido, Beto" : "Hola de nuevo");
+    const res = await fetch("/api/auth/session");
+    const sess = await res.json();
+    const role = sess?.user?.role as "CLIENTE" | "ADMIN" | null | undefined;
+    go(role === "ADMIN" ? "coach" : "cuenta");
+    showToast(role === "ADMIN" ? "Bienvenido, Beto" : "Hola de nuevo");
   };
 
   const logout = async () => {
@@ -136,9 +175,9 @@ export function useBetoApp() {
         onClick: () => set({ loginRolUI: r.id as "cliente" | "admin" }),
       };
     }),
-    loginError: "",
-    errorShow: "none",
-    setLoginError: () => {},
+    loginError,
+    errorShow: loginError ? "block" : "none",
+    setLoginError,
     loginCta: st.loginRolUI === "admin" ? "Entrar al panel" : "Ingresar",
     loginNota: st.loginRolUI === "admin"
       ? "Acceso exclusivo del entrenador."
