@@ -5,7 +5,8 @@ async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) {
-    throw new Error("SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD son requeridas para seedear");
+    console.log("Set SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD para crear el admin; continuando sin admin.");
+    return;
   }
 
   await prisma.user.upsert({
@@ -28,28 +29,33 @@ async function main() {
     { email: "julieta.r@example.com", nombre: "Julieta Ríos", iniciales: "JR", objetivo: "Rehabilitación de hombro", plan: "Bono 8 · 4 clases" },
   ];
 
-  for (const c of clientesDemo) {
-    const user = await prisma.user.upsert({
-      where: { email: c.email },
-      update: {},
-      create: {
-        email: c.email,
-        passwordHash: await hashPassword("Demo1234"),
-        role: "CLIENTE",
-        emailVerified: new Date(),
-      },
-    });
-    await prisma.cliente.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        nombre: c.nombre,
-        iniciales: c.iniciales,
-        objetivo: c.objetivo,
-        plan: c.plan,
-      },
-    });
+  if (process.env.SEED_DEMO_DATA === "true") {
+    for (const c of clientesDemo) {
+      const user = await prisma.user.upsert({
+        where: { email: c.email },
+        update: {},
+        create: {
+          email: c.email,
+          passwordHash: await hashPassword("Demo1234"),
+          role: "CLIENTE",
+          emailVerified: new Date(),
+        },
+      });
+      await prisma.cliente.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: {
+          userId: user.id,
+          nombre: c.nombre,
+          iniciales: c.iniciales,
+          objetivo: c.objetivo,
+          plan: c.plan,
+        },
+      });
+    }
+    console.log("Clientes demo creados.");
+  } else {
+    console.log("SEED_DEMO_DATA no activado: no se crearon clientes demo.");
   }
 
   console.log("Seed completo.");

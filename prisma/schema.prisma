@@ -17,8 +17,10 @@ enum AuditAction {
   LOGOUT
   REGISTRO
   EMAIL_VERIFICADO
+  EMAIL_VERIFICACION_SOLICITADA
   PASSWORD_RESET_SOLICITADO
   PASSWORD_RESET_COMPLETADO
+  PASSWORD_CAMBIADA
   SESION_REVOCADA
 }
 
@@ -36,8 +38,6 @@ model User {
   emailTokens   EmailVerificationToken[]
   resetTokens   PasswordResetToken[]
   auditLogs     AuditLog[]
-
-  @@index([email])
 }
 
 model Cliente {

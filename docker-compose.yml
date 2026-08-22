@@ -16,6 +16,17 @@ services:
     ports:
       - "3000:3000"
 
+  migrate:
+    build:
+      context: .
+      target: builder
+    restart: "no"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts"
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
