@@ -19,7 +19,8 @@ export async function ensureClasesGeneradas(now: Date = new Date()): Promise<voi
     select: { servicioId: true, fecha: true },
   });
 
-  const keyDeHorario = (fecha: Date) => `${fecha.getUTCDay()}-${fecha.getUTCHours()}:${fecha.getUTCMinutes()}`;
+  const keyDeHorario = (fecha: Date) =>
+    `${fecha.getUTCDay()}-${String(fecha.getUTCHours()).padStart(2, "0")}:${String(fecha.getUTCMinutes()).padStart(2, "0")}`;
 
   for (const horario of horarios) {
     const key = `${horario.diaSemana}-${horario.horaInicio}`;
