@@ -10,10 +10,19 @@ const QuerySchema = z.object({
 
 const SEIS_SEMANAS_MS = 6 * 7 * 24 * 60 * 60 * 1000;
 
-export async function GET(req: Request) {
-  await ensureClasesGeneradas();
+import { logger } from "../../../lib/logger";
 
+export async function GET(req: Request) {
   const url = new URL(req.url);
+
+  try {
+    await ensureClasesGeneradas();
+  } catch (e) {
+    logger.error({ err: e }, "error generando clases perezosamente");
+    return Response.json({ error: "Servicio temporalmente no disponible" }, { status: 503 });
+  }
+
+  // El resto sigue con las mismas variables url/parsed
   const parsed = QuerySchema.safeParse({
     servicioId: url.searchParams.get("servicioId") ?? undefined,
     desde: url.searchParams.get("desde") ?? undefined,
