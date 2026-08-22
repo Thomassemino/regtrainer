@@ -98,15 +98,3 @@ export const PH: Record<string, { src: string; credit: string; href: string }> =
   p3: { src: U("1637870473618-8c9fa7d11f0a", 900), credit: "Mohamed Fareed / Unsplash", href: "https://unsplash.com/@livesbro" },
   retrato: { src: U("1676655079738-af54dfd6318e", 900), credit: "Brendan Stephens / Unsplash", href: "https://unsplash.com/@brendan_stephens" },
 };
-
-export interface EjercicioDef {
-  n: string;
-  d: string;
-}
-
-export const RUTINA: Record<number, EjercicioDef[]> = {
-  0: [{ n: "Sentadilla trasera", d: "4 × 6 · 60 kg · RPE 8" }, { n: "Press banca", d: "4 × 8 · 40 kg" }, { n: "Remo con barra", d: "3 × 10 · 35 kg" }, { n: "Plancha lateral", d: "3 × 40 s por lado" }, { n: "Movilidad de cadera", d: "6 min al final" }],
-  1: [{ n: "Peso muerto rumano", d: "4 × 8 · 55 kg" }, { n: "Dominadas asistidas", d: "4 × 6" }, { n: "Zancadas caminando", d: "3 × 12 por pierna" }, { n: "Face pull", d: "3 × 15" }],
-  2: [{ n: "Trote continuo", d: "25 min ritmo 6:10" }, { n: "Series 400 m", d: "6 × 400 · pausa 90 s" }, { n: "Elongación guiada", d: "8 min" }],
-  3: [{ n: "Circuito HIIT", d: "5 vueltas · 40/20" }, { n: "Kettlebell swing", d: "4 × 15 · 16 kg" }, { n: "Burpees", d: "4 × 10" }, { n: "Core en suspensión", d: "3 × 12" }],
-};

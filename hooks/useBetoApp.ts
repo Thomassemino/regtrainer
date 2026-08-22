@@ -3,15 +3,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
-import { AC, ACD, DIV, DOW, HORAS, PACKS, PH, RUTINA, SERVICIOS, SUR, money } from "@/lib/data";
+import { AC, ACD, DIV, DOW, HORAS, PACKS, PH, SERVICIOS, SUR, money } from "@/lib/data";
 import type { AppState, Screen } from "@/lib/types";
 
 const initialState: AppState = {
   screen: "landing", cuentaTab: "reservas", prev: [],
   servicio: "funcional", dia: 2, hora: null, recurrente: false,
   metodo: "bono", cuota: 1, creditos: 6, packSel: null,
-  rutinaDia: 0, hechos: {}, toast: null,
+  toast: null,
   loginRolUI: "cliente",
+
+  fichaId: null,
+  programaIdActivo: null,
+  semanaSel: 1,
+  editorOpen: false,
+  editorDiaId: null,
+  editorBloqueId: null,
+  diaClienteSel: 0,
+  asignadosSel: {},
+  temaPdfSel: "clean",
 };
 
 function diasData() {
@@ -108,16 +118,6 @@ export function useBetoApp() {
   const esCliente = auth === "CLIENTE";
   const esAdmin = auth === "ADMIN";
 
-  const ejercicios = (RUTINA[st.rutinaDia] || []).map((e, i) => {
-    const key = st.rutinaDia + "-" + i;
-    const on = !!st.hechos[key];
-    return {
-      nombre: e.n, detalle: e.d, deco: on ? "line-through" : "none",
-      chkBd: on ? AC : DIV, chkBg: on ? AC : "transparent", chkFg: on ? "#161826" : "transparent",
-      onToggle: () => set((p) => ({ hechos: { ...p.hechos, [key]: !p.hechos[key] } })),
-    };
-  });
-
   const goTab = (t: AppState["cuentaTab"]) => () => set({ cuentaTab: t, screen: "cuenta" });
 
   const entrar = async (email: string, password: string) => {
@@ -149,10 +149,33 @@ export function useBetoApp() {
     go("login");
   };
 
+  const goClientes = () => go("clientes");
+  const goFicha = (clienteId: string) => { set({ fichaId: clienteId }); go("ficha"); };
+  const goBuilder = (programaId: string) => { set({ programaIdActivo: programaId, semanaSel: 1 }); go("builder"); };
+  const goAsignar = () => go("asignar");
+  const goPdf = () => go("pdf");
+
+  const abrirEditor = (diaId: string, bloqueId: string | null) =>
+    set({ editorOpen: true, editorDiaId: diaId, editorBloqueId: bloqueId });
+  const cerrarEditor = () =>
+    set({ editorOpen: false, editorDiaId: null, editorBloqueId: null });
+
+  const toggleAsignado = (clienteId: string) =>
+    set((p) => ({ asignadosSel: { ...p.asignadosSel, [clienteId]: !p.asignadosSel[clienteId] } }));
+
+  const setSemanaSel = (semana: number) => set({ semanaSel: semana });
+  const setDiaClienteSel = (dia: number) => set({ diaClienteSel: dia });
+  const setTemaPdfSel = (tema: AppState["temaPdfSel"]) => set({ temaPdfSel: tema });
+
   const vals = {
     isLanding: st.screen === "landing", isReservar: st.screen === "reservar", isCheckout: st.screen === "checkout",
     isConfirm: st.screen === "confirm", isCuenta: st.screen === "cuenta", isCoach: st.screen === "coach",
     isLogin: st.screen === "login",
+    isClientes: st.screen === "clientes",
+    isFicha: st.screen === "ficha",
+    isBuilder: st.screen === "builder",
+    isAsignar: st.screen === "asignar",
+    isPdf: st.screen === "pdf",
     esCliente, esAdmin,
     cuentaLabel: auth ? "Mi cuenta" : "Ingresar",
     logoutShow: auth ? "inline-flex" : "none",
@@ -193,6 +216,21 @@ export function useBetoApp() {
     goLanding: () => go("landing"), goReservar: () => go("reservar"),
     goCuenta: () => go(auth ? "cuenta" : "login"),
     goCoach,
+    goClientes, goFicha, goBuilder, goAsignar, goPdf,
+    abrirEditor, cerrarEditor, toggleAsignado,
+    setSemanaSel, setDiaClienteSel, setTemaPdfSel,
+    fichaId: st.fichaId,
+    programaIdActivo: st.programaIdActivo,
+    semanaSel: st.semanaSel,
+    editorOpen: st.editorOpen,
+    editorDiaId: st.editorDiaId,
+    editorBloqueId: st.editorBloqueId,
+    diaClienteSel: st.diaClienteSel,
+    asignadosSel: st.asignadosSel,
+    temaPdfSel: st.temaPdfSel,
+    setProgramaIdActivo: (id: string | null) => set({ programaIdActivo: id }),
+    set,
+    showToast,
     goPrecios: () => { go("landing"); showToast("Elegí un paquete en la sección Precios"); },
 
     navLinks: [
@@ -317,8 +355,8 @@ export function useBetoApp() {
       { fecha: "07/07/2026", concepto: "Clase personalizada", medio: "Mercado Pago", importe: money(22000) },
       { fecha: "02/06/2026", concepto: "Bono 4 clases", medio: "Visa •••3704", importe: money(43000) },
     ],
-    diasRutina: ["Día 1 · Fuerza", "Día 2 · Tren inferior", "Día 3 · Running", "Día 4 · HIIT"].map((l, i) => ({ label: l, ...sel(st.rutinaDia === i), onClick: () => set({ rutinaDia: i }) })),
-    ejercicios,
+    diasRutina: [] as { label: string; bg: string; bd: string; fg: string; onClick: () => void }[],
+    ejercicios: [] as { nombre: string; detalle: string; deco: string; chkBd: string; chkBg: string; chkFg: string; onToggle: () => void }[],
     notis: [
       { icon: "ph-calendar-check", titulo: "Recordatorio: Funcional hoy 19:00", texto: "Llegá 10 minutos antes para la entrada en calor.", cuando: "Hace 20 min", bg: "rgba(145,132,217,.10)" },
       { icon: "ph-ticket", titulo: "Te quedan 6 clases del bono", texto: "Vence el 30/09. Renovalo antes con 10% de descuento.", cuando: "Ayer", bg: SUR },
