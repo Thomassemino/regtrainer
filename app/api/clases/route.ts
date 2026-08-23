@@ -43,6 +43,12 @@ export async function GET(req: Request) {
     servicioId = servicio?.id;
   }
 
+  // Bug 1.6: si pidieron por slug y este no resuelve a ningun servicio, devolver
+  // vacio (nunca la lista completa sin filtrar).
+  if (parsed.data.slug && !servicioId) {
+    return Response.json({ clases: [] });
+  }
+
   const clases = await prisma.clase.findMany({
     where: {
       cancelada: false,

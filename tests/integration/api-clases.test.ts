@@ -51,4 +51,19 @@ describe("GET /api/clases", () => {
 
     expect(body.clases).toHaveLength(0);
   });
+
+  it("con un slug inexistente devuelve clases vacias, nunca la lista completa sin filtrar (bug 1.6)", async () => {
+    const servicio = await prisma.servicio.create({
+      data: { slug: "funcional", nombre: "Funcional", tag: "Grupal", duracionMin: 50, precio: 0, cupoMax: 2 },
+    });
+    await prisma.clase.create({
+      data: { servicioId: servicio.id, fecha: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), cupoMax: 2 },
+    });
+
+    const { GET } = await import("../../app/api/clases/route");
+    const res = await GET(new Request(`http://localhost/api/clases?slug=slug-que-no-existe`));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.clases).toEqual([]);
+  });
 });
