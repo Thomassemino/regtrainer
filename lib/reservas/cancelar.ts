@@ -14,6 +14,13 @@ export class NoAutorizadoError extends Error {
   }
 }
 
+async function esperarBackoff(intento: number): Promise<void> {
+  // Backoff corto con jitter (10–50ms por intento). Bajo contención real esto reduce
+  // la carga en la DB comparado con el loop apretado, sin cambiar el retry.
+  const base = 10 * intento;
+  await new Promise((resolve) => setTimeout(resolve, base + Math.floor(Math.random() * 40 * intento)));
+}
+
 async function conReintentoDeSerializacion<T>(fn: () => Promise<T>, intentos = 10): Promise<T> {
   for (let intento = 1; intento <= intentos; intento++) {
     try {
@@ -25,6 +32,7 @@ async function conReintentoDeSerializacion<T>(fn: () => Promise<T>, intentos = 1
           (e as { name?: unknown }).name === "DriverAdapterError" &&
           ((e as { cause?: { kind?: unknown } }).cause?.kind === "TransactionWriteConflict"));
       if (!esConflictoDeSerializacion || intento === intentos) throw e;
+      await esperarBackoff(intento);
     }
   }
   throw new Error("No se pudo completar la operación tras reintentos");

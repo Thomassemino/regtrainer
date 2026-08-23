@@ -17,6 +17,13 @@ export class RequierePagoError extends Error {
   }
 }
 
+async function esperarBackoff(intento: number): Promise<void> {
+  // Backoff corto con jitter (10–50ms por intento). Bajo contención real esto reduce
+  // la carga en la DB comparado con el loop apretado, sin cambiar la corrección del retry.
+  const base = 10 * intento;
+  await new Promise((resolve) => setTimeout(resolve, base + Math.floor(Math.random() * 40 * intento)));
+}
+
 async function conReintentoDeSerializacion<T>(fn: () => Promise<T>, intentos = 30): Promise<T> {
   for (let intento = 1; intento <= intentos; intento++) {
     try {
@@ -26,6 +33,7 @@ async function conReintentoDeSerializacion<T>(fn: () => Promise<T>, intentos = 3
         (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2034") ||
         (isWriteConflict(e));
       if (!esConflictoDeSerializacion || intento === intentos) throw e;
+      await esperarBackoff(intento);
     }
   }
   throw new Error("No se pudo completar la reserva tras reintentos");
