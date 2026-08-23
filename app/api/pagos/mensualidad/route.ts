@@ -24,6 +24,11 @@ export async function POST(_req: Request) {
   }
 
   try {
+    // CRÍTICO (hallazgo 1.1 de la auditoría): NO se crea ninguna fila Suscripcion acá.
+    // El Preapproval se crea y se devuelve el initPoint para que el cliente autorice
+    // en la página de Mercado Pago; recién cuando el webhook `subscription_preapproval`
+    // confirma `status: authorized` (consultando la API, sin confiar en el body) se
+    // materializa la Suscripcion en ACTIVA. Si no llega esa notificación, no hay fila.
     const preapproval = new PreApproval(mpClient);
     const resultado = await preapproval.create({
       body: {
@@ -40,25 +45,7 @@ export async function POST(_req: Request) {
       },
     });
 
-    const suscripcion = await prisma.suscripcion.upsert({
-      where: { clienteId: cliente.id },
-      update: {
-        estado: "ACTIVA",
-        precio: PRECIO_MENSUALIDAD_CENTAVOS,
-        fechaInicio: new Date(),
-        fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        mpPreapprovalId: resultado.id,
-        canceladaEn: null,
-      },
-      create: {
-        clienteId: cliente.id,
-        precio: PRECIO_MENSUALIDAD_CENTAVOS,
-        fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        mpPreapprovalId: resultado.id,
-      },
-    });
-
-    return Response.json({ initPoint: resultado.init_point, suscripcionId: suscripcion.id }, { status: 201 });
+    return Response.json({ initPoint: resultado.init_point }, { status: 201 });
   } catch (e) {
     logger.error({ err: e }, "error creando preapproval de mercado pago");
     return Response.json({ error: "No pudimos iniciar la suscripción, intentá de nuevo" }, { status: 502 });

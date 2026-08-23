@@ -25,7 +25,7 @@ beforeEach(async () => {
 });
 
 describe("POST /api/pagos/mensualidad", () => {
-  it("crea la Suscripcion en ACTIVA y devuelve el link de autorización", async () => {
+  it("crea SOLO el Preapproval en Mercado Pago y devuelve initPoint, sin crear Suscripcion todavia", async () => {
     const user = await prisma.user.create({
       data: { email: "mensual-http@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
     });
@@ -40,9 +40,9 @@ describe("POST /api/pagos/mensualidad", () => {
     const body = await res.json();
     expect(body.initPoint).toContain("mercadopago.com");
 
-    const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { id: body.suscripcionId } });
-    expect(suscripcion.estado).toBe("ACTIVA");
-    expect(suscripcion.mpPreapprovalId).toBe("mp-preapproval-1");
+    // Bug de la auditoría (1.1): nada debe persistir hasta que el webhook confirme la autorización.
+    const suscripciones = await prisma.suscripcion.findMany();
+    expect(suscripciones).toHaveLength(0);
   });
 });
 

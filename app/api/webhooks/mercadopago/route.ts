@@ -1,6 +1,7 @@
-import { Payment } from "mercadopago";
+import { Payment, PreApproval } from "mercadopago";
 import { prisma } from "../../../../lib/db";
 import { mpClient } from "../../../../lib/mercadopago/client";
+import { pesosACentavos } from "../../../../lib/dinero";
 import { verificarFirmaWebhook } from "../../../../lib/mercadopago/firma";
 import { crearReservaConCupo } from "../../../../lib/reservas/crear";
 import { generarComprobantePago } from "../../../../lib/comprobantes/generar";
@@ -28,6 +29,9 @@ export async function POST(req: Request) {
   const topic = url.searchParams.get("type") ?? url.searchParams.get("topic");
   if (topic === "subscription_authorized_payment") {
     return manejarSubscriptionAutorizado(dataId);
+  }
+  if (topic === "subscription_preapproval") {
+    return manejarPreapprovalAutorizado(dataId);
   }
 
   const payment = new Payment(mpClient);
@@ -112,6 +116,62 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
       await prisma.suscripcion.update({
         where: { id: suscripcion.id },
         data: { fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+      });
+    }
+  }
+  return Response.json({ ok: true });
+}
+
+async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
+  // Hallazgo 1.1: nunca confiamos en el body de la notificación; consultamos el
+  // PreApproval contra la API real de Mercado Pago y leemos status + external_reference.
+  let preapproval;
+  try {
+    const pre = new PreApproval(mpClient);
+    preapproval = await pre.get({ id: dataId });
+  } catch (e) {
+    logger.error({ err: e, dataId }, "no se pudo consultar el preapproval de mercado pago");
+    return Response.json({ ok: true });
+  }
+
+  const clienteId = preapproval.external_reference;
+  if (!clienteId) {
+    logger.warn({ dataId }, "preapproval sin external_reference reconocible");
+    return Response.json({ ok: true });
+  }
+
+  if (preapproval.status === "authorized") {
+    // El transaction_amount del preapproval viene en pesos; el precio interno en centavos.
+    const precio = pesosACentavos(preapproval.auto_recurring?.transaction_amount ?? 0);
+    try {
+      await prisma.suscripcion.upsert({
+        where: { clienteId },
+        update: {
+          estado: "ACTIVA",
+          precio,
+          fechaInicio: new Date(),
+          fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          mpPreapprovalId: dataId,
+          canceladaEn: null,
+        },
+        create: {
+          clienteId,
+          estado: "ACTIVA",
+          precio,
+          fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          mpPreapprovalId: dataId,
+        },
+      });
+    } catch (e) {
+      // El external_reference puede apuntar a un cliente que no existe en esta DB.
+      logger.error({ err: e, dataId, clienteId }, "no se pudo materializar la suscripcion del preapproval");
+    }
+  } else {
+    const existente = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: dataId } });
+    if (existente) {
+      await prisma.suscripcion.update({
+        where: { id: existente.id },
+        data: { estado: "CANCELADA", canceladaEn: new Date() },
       });
     }
   }
