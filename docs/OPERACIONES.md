@@ -1,5 +1,11 @@
 # Operaciones — Beto Training
 
+## Docker (producción, multi-stage)
+
+- Build de producción **sin** el override de dev: `docker compose -f docker-compose.yml build app`.
+- El server standalone de Next bindea por defecto al `HOSTNAME` que le da Docker (no a todas las interfaces). El `Dockerfile` fuerza `ENV HOSTNAME=0.0.0.0` para que el healthcheck (`wget http://localhost:3000/api/health`) y los proxys del host lo alcancen. **No quitar ese env**.
+- Para levantar la infra de test para e2e/integration: `docker compose -f docker-compose.test.yml up -d db-test maildev-test` (usarlos después de un `down` del proyecto; las redes se recrean).
+
 ## Primer despliegue
 1. Copiar `.env.example` a `.env`, completar `POSTGRES_PASSWORD` y `AUTH_SECRET` (generar con `openssl rand -base64 32`), `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`.
 2. `docker compose up -d db`
