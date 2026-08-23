@@ -68,3 +68,43 @@ describe("PATCH /api/coach/pagos/:id", () => {
     expect(pagoTrasIntento.estado).toBe("REEMBOLSADO");
   });
 });
+
+describe("GET /api/coach/pagos — protegido por requireAdmin", () => {
+  it("rechaza con 403 a un CLIENTE", async () => {
+    const { auth } = await import("../../lib/auth");
+    vi.mocked(auth).mockResolvedValue({ user: { id: "cli", role: "CLIENTE" } } as never);
+    const { GET } = await import("../../app/api/coach/pagos/route");
+    const res = await GET(new Request("http://localhost/api/coach/pagos"));
+    expect(res.status).toBe(403);
+  });
+
+  it("como ADMIN lista los pagos reales y marca pendienteEfectivo", async () => {
+    const user = await prisma.user.create({
+      data: { email: "coach-pagos@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({ data: { userId: user.id, nombre: "Coach Pagos", iniciales: "CP", objetivo: "" } });
+    await prisma.pago.create({
+      data: { clienteId: cliente.id, tipo: "CLASE_SUELTA", medio: "EFECTIVO", monto: 1200000, estado: "PENDIENTE" },
+    });
+    await prisma.pago.create({
+      data: { clienteId: cliente.id, tipo: "MENSUALIDAD", medio: "MERCADO_PAGO", monto: 15000000, estado: "APROBADO" },
+    });
+
+    const { auth } = await import("../../lib/auth");
+    vi.mocked(auth).mockResolvedValue({ user: { id: "admin-id", role: "ADMIN" } } as never);
+
+    const { GET } = await import("../../app/api/coach/pagos/route");
+    const res = await GET(new Request("http://localhost/api/coach/pagos"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.pagos).toHaveLength(2);
+
+    const efectivo = body.pagos.find((p: { medio: string }) => p.medio === "EFECTIVO");
+    expect(efectivo.pendienteEfectivo).toBe(true);
+    expect(efectivo.pagoId).toBeTruthy();
+    expect(efectivo.montoPesos).toBe(12000);
+
+    const mp = body.pagos.find((p: { medio: string }) => p.medio === "MERCADO_PAGO");
+    expect(mp.pendienteEfectivo).toBe(false);
+  });
+});

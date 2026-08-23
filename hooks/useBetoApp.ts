@@ -88,6 +88,7 @@ export function useBetoApp() {
   const [suscripcionActiva, setSuscripcionActiva] = useState(false);
   const [reservasReales, setReservasReales] = useState<ReservaApi[]>([]);
   const [cargandoReservas, setCargandoReservas] = useState(false);
+  const [pagosCoachReales, setPagosCoachReales] = useState<{ pagoId: string; cliente: string; concepto: string; medio: string; estado: string; montoPesos: number; pendienteEfectivo: boolean }[]>([]);
 
   useEffect(() => {
     if (state.screen !== "reservar") return;
@@ -107,6 +108,7 @@ export function useBetoApp() {
 
   const auth = session?.user?.role ?? null;
   const esCliente = auth === "CLIENTE";
+  const esAdmin = auth === "ADMIN";
 
   useEffect(() => {
     if (!esCliente) {
@@ -118,6 +120,21 @@ export function useBetoApp() {
       .then((data) => setSuscripcionActiva(!!data.activa))
       .catch(() => setSuscripcionActiva(false));
   }, [esCliente]);
+
+  const cargarPagosCoach = useCallback(() => {
+    if (!esAdmin) {
+      Promise.resolve().then(() => setPagosCoachReales([]));
+      return Promise.resolve();
+    }
+    return fetch("/api/coach/pagos")
+      .then((r) => r.json())
+      .then((d) => setPagosCoachReales(d.pagos ?? []))
+      .catch(() => setPagosCoachReales([]));
+  }, [esAdmin]);
+
+  useEffect(() => {
+    void cargarPagosCoach();
+  }, [esAdmin, cargarPagosCoach]);
 
   const cargarReservasReales = useCallback(() => {
     if (!esCliente) {
@@ -191,8 +208,6 @@ export function useBetoApp() {
   const diaSel = dias[st.dia];
   const packSel = PACKS.find((p) => p.id === st.packSel) ?? null;
   const total = packSel ? packSel.precio : s.precio;
-
-  const esAdmin = auth === "ADMIN";
 
   const goTab = (t: AppState["cuentaTab"]) => () => set({ cuentaTab: t, screen: "cuenta" });
 
@@ -492,6 +507,7 @@ export function useBetoApp() {
       const res = await fetch(`/api/coach/pagos/${pagoId}`, { method: "PATCH" });
       if (res.ok) {
         showToast("Pago marcado como recibido");
+        void cargarPagosCoach();
       } else {
         showToast("No se pudo marcar el pago");
       }
@@ -573,12 +589,15 @@ export function useBetoApp() {
       { ini: "SL", nombre: "Sofía Lema", motivo: "Faltó a las últimas 2 clases", cta: "Escribir" },
       { ini: "LG", nombre: "Lucía Giménez", motivo: "Evaluación inicial sin plan cargado", cta: "Cargar" },
     ],
-    pagosCoach: ([
-      { cliente: "Camila F.", concepto: "Mensualidad", importe: money(150000) },
-      { cliente: "Nicolás P.", concepto: "Mensualidad", importe: money(150000) },
-      { cliente: "Julieta R.", concepto: "Clase suelta", importe: money(12000) },
-      { cliente: "Martín D.", concepto: "Personalizada suelta", importe: money(22000) },
-    ] as { cliente: string; concepto: string; importe: string; pagoId?: string; pendienteEfectivo?: boolean }[]),
+    pagosCoach: pagosCoachReales.map((p) => ({
+      pagoId: p.pagoId,
+      cliente: p.cliente,
+      concepto: p.concepto,
+      importe: money(p.montoPesos),
+      pendienteEfectivo: p.pendienteEfectivo,
+      medio: p.medio,
+      estado: p.estado,
+    })),
 
     toast: st.toast || "", toastShow: st.toast ? "block" : "none",
     loading: status === "loading",
