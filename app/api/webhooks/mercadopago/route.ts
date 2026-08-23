@@ -248,7 +248,7 @@ async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
       (existenteActual.canceladaEn !== null || existenteActual.estado === "CANCELADA");
 
     try {
-      const dataUpsert = esElMismoPreapprovalCancelado
+      const dataUpsert: Prisma.SuscripcionUpdateInput = esElMismoPreapprovalCancelado
         ? {
             // Mantiene CANCELADA y su canceladaEn pero actualiza el resto de datos.
             estado: "CANCELADA",
