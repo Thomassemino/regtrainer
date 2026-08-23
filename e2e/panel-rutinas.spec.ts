@@ -7,10 +7,11 @@ test.describe.configure({ mode: "serial" });
 
 test("entrenador: clientes -> ficha -> builder -> asignar -> pdf", async ({ page }) => {
   await page.goto("/login");
-  await page.getByPlaceholder(/email/i).fill(ADMIN_EMAIL);
-  await page.getByPlaceholder(/contraseña/i).fill(ADMIN_PASSWORD);
+  await page.getByPlaceholder("tu@email.com").fill(ADMIN_EMAIL);
+  await page.getByPlaceholder("••••••••").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: /entrar al panel|ingresar/i }).click();
-  await expect(page).toHaveURL(/screen=coach/);
+  // El login real redirige a `/`; la SPA muestra el panel del entrenador (ADMIN).
+  await expect(page.getByRole("heading", { name: "Panel de Beto" })).toBeVisible({ timeout: 15000 });
 
   await page.getByRole("button", { name: /constructor de rutinas/i }).click();
   await expect(page.getByRole("heading", { name: "Clientes" })).toBeVisible();
@@ -20,14 +21,14 @@ test("entrenador: clientes -> ficha -> builder -> asignar -> pdf", async ({ page
   await expect(page.getByText("Sin asignar")).toBeVisible();
 
   // Crear el primer bloque del lunes.
-  await page.getByText("Lunes").locator("..").getByText("+").click();
+  await page.getByText("Lunes").locator("..").locator("..").getByRole("button", { name: "+", exact: true }).click();
   await page.getByPlaceholder("Nombre del ejercicio").fill("Sentadilla trasera con barra");
   await page.getByPlaceholder(/Detalle/).fill("5 × 3 · @ 80% 1RM");
   await page.getByRole("button", { name: /guardar bloque/i }).click();
   await expect(page.getByText("Bloque guardado con su sobrecarga")).toBeVisible();
 
   // Crear el segundo bloque del mismo día.
-  await page.getByText("Lunes").locator("..").getByText("+").click();
+  await page.getByText("Lunes").locator("..").locator("..").getByRole("button", { name: "+", exact: true }).click();
   await page.getByPlaceholder("Nombre del ejercicio").fill("Press de banca con barra");
   await page.getByPlaceholder(/Detalle/).fill("5 × 4 · @ 77,5% 1RM");
   await page.getByRole("button", { name: /guardar bloque/i }).click();
@@ -41,8 +42,8 @@ test("entrenador: clientes -> ficha -> builder -> asignar -> pdf", async ({ page
   await page.keyboard.press("Space");
 
   // Agregar una semana.
-  await page.getByRole("button", { name: "+", exact: true }).last().click();
-  await expect(page.getByText(/Semana \d agregada al bloque/)).toBeVisible();
+  await page.getByRole("button", { name: "+", exact: true }).first().click();
+  await expect(page.getByText(/Semana \d agregada al bloque/)).toBeVisible({ timeout: 10000 });
 
   await page.getByRole("button", { name: "Continuar →" }).click();
   await expect(page.getByText(/^Asignar «/)).toBeVisible();
@@ -61,10 +62,11 @@ test("entrenador: clientes -> ficha -> builder -> asignar -> pdf", async ({ page
 
 test("cliente: ve el programa recién asignado en Mi rutina", async ({ page }) => {
   await page.goto("/login");
-  await page.getByPlaceholder(/email/i).fill("camila.f@example.com");
-  await page.getByPlaceholder(/contraseña/i).fill("Demo1234");
+  await page.getByPlaceholder("tu@email.com").fill("camila.f@example.com");
+  await page.getByPlaceholder("••••••••").fill("Demo1234");
   await page.getByRole("button", { name: /ingresar/i }).click();
-  await expect(page).toHaveURL(/\/cuenta/);
+  // La SPA (cliente) navega a la cuenta: esperamos el tab de reservas visible.
+  await expect(page.getByRole("heading", { name: "Mis reservas" })).toBeVisible({ timeout: 10000 });
 
   await page.getByText("Mi rutina").click();
   await expect(page.getByRole("heading", { name: "Mi rutina" })).toBeVisible();

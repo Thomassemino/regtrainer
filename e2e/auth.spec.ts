@@ -10,7 +10,7 @@ test("registro, verificación por Maildev y login", async ({ page, request }) =>
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(page.getByText(/Te mandamos un email/)).toBeVisible();
 
-  const MAILDEV = "http://localhost:1080/email";
+  const MAILDEV = "http://localhost:1080/api/email";
 
   await expect
     .poll(
@@ -39,7 +39,7 @@ test("registro, verificación por Maildev y login", async ({ page, request }) =>
   await page.getByPlaceholder("tu@email.com").fill(email);
   await page.getByPlaceholder("••••••••").fill("Password123");
   await page.getByRole("button", { name: /ingresar/i }).click();
-  await expect(page.getByText("Mis reservas")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mis reservas" })).toBeVisible();
 });
 
 test("un cliente no puede entrar a /coach", async ({ page }) => {
@@ -47,7 +47,7 @@ test("un cliente no puede entrar a /coach", async ({ page }) => {
   await page.getByPlaceholder("tu@email.com").fill("camila.f@example.com");
   await page.getByPlaceholder("••••••••").fill("Demo1234");
   await page.getByRole("button", { name: /ingresar/i }).click();
-  await expect(page.getByText("Mis reservas")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mis reservas" })).toBeVisible();
 
   await page.goto("/coach");
   await page.waitForURL(/\/(login)?$/);
