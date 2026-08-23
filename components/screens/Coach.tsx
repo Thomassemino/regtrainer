@@ -89,7 +89,7 @@ export default function Coach({ vals }: { vals: BetoVals }) {
             <thead><tr><th>Cliente</th><th>Concepto</th><th style={{ textAlign: "right" }}>Importe</th><th /></tr></thead>
             <tbody>
               {vals.pagosCoach.map((p) => (
-                <tr key={p.cliente}>
+                <tr key={p.pagoId ?? p.cliente + p.concepto}>
                   <td>{p.cliente}</td>
                   <td>{p.concepto}</td>
                   <td style={{ textAlign: "right" }}>{p.importe}</td>

@@ -81,4 +81,70 @@ describe("POST /api/webhooks/mercadopago — subscription_authorized_payment", (
     const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
     expect(suscripcion.estado).toBe("VENCIDA");
   });
+
+  it("un cobro transitorio (pending/in_process) NO marca la Suscripcion como VENCIDA", async () => {
+    const user = await prisma.user.create({
+      data: { email: "webhook-pending@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({ data: { userId: user.id, nombre: "Webhook Pending", iniciales: "WP", objetivo: "" } });
+    await prisma.suscripcion.create({
+      data: { clienteId: cliente.id, estado: "ACTIVA", precio: 15000000, fechaProximoCobro: new Date(), mpPreapprovalId: "preapproval-pending" },
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ preapproval_id: "preapproval-pending", payment: { id: 123457, status: "in_process" } }),
+    } as Response);
+
+    const ts = "1700000000";
+    const dataId = "authorized-payment-3";
+    const v1 = firmar(dataId, "req-3", ts);
+    const { POST } = await import("../../app/api/webhooks/mercadopago/route");
+    const res = await POST(
+      new Request(`http://localhost/api/webhooks/mercadopago?data.id=${dataId}&type=subscription_authorized_payment`, {
+        method: "POST",
+        headers: { "x-signature": `ts=${ts},v1=${v1}`, "x-request-id": "req-3" },
+        body: JSON.stringify({}),
+      })
+    );
+    expect(res.status).toBe(200);
+
+    const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
+    expect(suscripcion.estado).toBe("ACTIVA");
+  });
+
+  it("una Suscripcion VENCIDA se reactiva a ACTIVA cuando llega un cobro aprobado posterior", async () => {
+    const user = await prisma.user.create({
+      data: { email: "webhook-reactivar@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({ data: { userId: user.id, nombre: "Webhook Reactivar", iniciales: "WR", objetivo: "" } });
+    await prisma.suscripcion.create({
+      data: { clienteId: cliente.id, estado: "VENCIDA", precio: 15000000, fechaProximoCobro: new Date(), mpPreapprovalId: "preapproval-reactivar" },
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ preapproval_id: "preapproval-reactivar", payment: { id: 123458, status: "approved" } }),
+    } as Response);
+
+    const ts = "1700000000";
+    const dataId = "authorized-payment-4";
+    const v1 = firmar(dataId, "req-4", ts);
+    const { POST } = await import("../../app/api/webhooks/mercadopago/route");
+    const res = await POST(
+      new Request(`http://localhost/api/webhooks/mercadopago?data.id=${dataId}&type=subscription_authorized_payment`, {
+        method: "POST",
+        headers: { "x-signature": `ts=${ts},v1=${v1}`, "x-request-id": "req-4" },
+        body: JSON.stringify({}),
+      })
+    );
+    expect(res.status).toBe(200);
+
+    const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
+    expect(suscripcion.estado).toBe("ACTIVA");
+    expect(suscripcion.canceladaEn).toBeNull();
+    const pago = await prisma.pago.findFirstOrThrow({ where: { suscripcionId: suscripcion.id } });
+    expect(pago.mpPaymentId).toBe("123458");
+    expect(pago.estado).toBe("APROBADO");
+  });
 });

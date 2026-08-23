@@ -1,4 +1,5 @@
 import { Payment, PreApproval } from "mercadopago";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../../../lib/db";
 import { mpClient } from "../../../../lib/mercadopago/client";
 import { pesosACentavos } from "../../../../lib/dinero";
@@ -7,6 +8,8 @@ import { crearReservaConCupo } from "../../../../lib/reservas/crear";
 import { generarComprobantePago } from "../../../../lib/comprobantes/generar";
 import { sendComprobanteEmail, sendCobroFallidoEmail } from "../../../../lib/email/templates";
 import { logger } from "../../../../lib/logger";
+
+const PRECIO_MENSUALIDAD_CENTAVOS_DEFAULT = 15000000;
 
 export async function POST(req: Request) {
   const url = new URL(req.url);
@@ -33,11 +36,31 @@ export async function POST(req: Request) {
   if (topic === "subscription_preapproval") {
     return manejarPreapprovalAutorizado(dataId);
   }
+  if (!topic || topic === "payment") {
+    // Checkout Pro / pagos sueltos llegan con topic=payment.
+  } else {
+    // Cualquier otro topic (merchant_order, etc.) nunca debe resolverse como Payment:
+    // consultar payment.get con ese id rompería la firma del flujo. Respuesta OK y no
+    // reintentable para no espantar notificaciones que no nos corresponden.
+    return Response.json({ ok: true });
+  }
 
   const payment = new Payment(mpClient);
-  const pagoMp = await payment.get({ id: dataId });
+  let pagoMp;
+  try {
+    pagoMp = await payment.get({ id: dataId });
+  } catch (e) {
+    logger.error({ err: e, dataId }, "no se pudo consultar el pago de mercado pago");
+    return Response.json({ ok: true });
+  }
 
-  const externalRef = pagoMp.external_reference ? JSON.parse(pagoMp.external_reference) : null;
+  let externalRef = null;
+  try {
+    externalRef = pagoMp.external_reference ? JSON.parse(pagoMp.external_reference) : null;
+  } catch {
+    logger.warn({ dataId }, "external_reference no es JSON válido");
+    return Response.json({ ok: true });
+  }
   if (!externalRef?.pagoId) {
     logger.warn({ dataId }, "webhook de mercado pago sin external_reference reconocible");
     return Response.json({ ok: true });
@@ -93,10 +116,19 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
   const authorizedPayment: { preapproval_id: string; payment?: { id: number | string; status: string } } =
     await authorizedPaymentRes.json();
 
-  if (!authorizedPayment.payment || authorizedPayment.payment.status !== "approved") {
-    // La Suscripcion venció: el cobro recurrente fallo (rejected/pending/etc). Marcamos VENCIDA
-    // y avisamos. Asi cubreMensualidad deja de dar cobertura (bug 1.2 de la auditoria).
+  if (!authorizedPayment.payment) {
+    return Response.json({ ok: true });
+  }
+
+  const statusPago = authorizedPayment.payment.status;
+  if (statusPago === "rejected" || statusPago === "cancelled" || statusPago === "refunded") {
+    // Cobro recurrente falló de forma DEFINITIVA (no pending/in_process, que son
+    // transitorios y pueden aprobarse en un reintento). Marcamos VENCIDA y avisamos.
     await marcarSuscripcionVencida(authorizedPayment.preapproval_id);
+    return Response.json({ ok: true });
+  }
+  if (statusPago !== "approved") {
+    // states transitorios (pending/in_process/authorized): no cambiamos estado, MP reintentará.
     return Response.json({ ok: true });
   }
 
@@ -118,7 +150,12 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
       });
       await prisma.suscripcion.update({
         where: { id: suscripcion.id },
-        data: { fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        data: {
+          // Un cobro aprobado posterior reintegra la cobertura si había quedado VENCIDA.
+          estado: "ACTIVA",
+          canceladaEn: null,
+          fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
       });
     }
   }
@@ -165,7 +202,16 @@ async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
 
   if (preapproval.status === "authorized") {
     // El transaction_amount del preapproval viene en pesos; el precio interno en centavos.
-    const precio = pesosACentavos(preapproval.auto_recurring?.transaction_amount ?? 0);
+    // Si MP no lo reporta, caemos al precio default en vez de materializar una suscripción
+    // ACTIVA con precio 0 (que luego generaría Pago.monto = 0).
+    const montoPesos = preapproval.auto_recurring?.transaction_amount;
+    const precio =
+      montoPesos && Number.isFinite(montoPesos) && montoPesos > 0
+        ? pesosACentavos(montoPesos)
+        : PRECIO_MENSUALIDAD_CENTAVOS_DEFAULT;
+    if (!montoPesos) {
+      logger.warn({ dataId, clienteId }, "preapproval sin transaction_amount; se usa precio default");
+    }
     try {
       await prisma.suscripcion.upsert({
         where: { clienteId },
@@ -186,8 +232,19 @@ async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
         },
       });
     } catch (e) {
-      // El external_reference puede apuntar a un cliente que no existe en esta DB.
-      logger.error({ err: e, dataId, clienteId }, "no se pudo materializar la suscripcion del preapproval");
+      // Solo el FK de "cliente inexistente" (external_reference apunta a un id que
+      // no está en esta DB) es descartable. Cualquier otro error (DB caída, conflicto,
+      // race) debe propagarse para que Mercado Pago reintente la notificación.
+      // Verificado contra el adapter instalado: el P2003 llega como
+      // PrismaClientKnownRequestError; en el upsert de Suscripcion el único FK que
+      // puede violarse es el de clienteId.
+      const esFKClienteInexistente =
+        e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003";
+      if (esFKClienteInexistente) {
+        logger.warn({ dataId, clienteId }, "preapproval autorizado para un cliente inexistente en esta DB");
+      } else {
+        throw e;
+      }
     }
   } else {
     const existente = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: dataId } });

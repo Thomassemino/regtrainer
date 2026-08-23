@@ -113,4 +113,32 @@ describe("POST /api/pagos/mensualidad + POST /api/webhooks (subscription_preappr
     expect(suscripcion.estado).toBe("CANCELADA");
     expect(suscripcion.canceladaEn).not.toBeNull();
   });
+
+  it("si el preapproval autorizado no reporta transaction_amount, usa el precio default (no 0)", async () => {
+    const user = await prisma.user.create({
+      data: { email: "preapproval-sin-monto@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({
+      data: { userId: user.id, nombre: "Preapro Sin Monto", iniciales: "PSM", objetivo: "" },
+    });
+
+    (globalThis as unknown as { __preapprovalStatus?: string }).__preapprovalStatus = "authorized";
+    (globalThis as unknown as { __preapprovalExternalRef?: string }).__preapprovalExternalRef = cliente.id;
+    (globalThis as unknown as { __preapprovalMonto?: number | null }).__preapprovalMonto = 0;
+    const webhookRes = await dispararWebhookPreapproval("preapproval-sin-monto");
+    expect(webhookRes.status).toBe(200);
+
+    const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
+    expect(suscripcion.estado).toBe("ACTIVA");
+    // NUNCA precio 0: cae al default de mensualidad.
+    expect(suscripcion.precio).toBeGreaterThan(0);
+  });
+
+  it("un preapproval autorizado que apunta a un cliente inexistente no crashea (se traga el FK)", async () => {
+    (globalThis as unknown as { __preapprovalStatus?: string }).__preapprovalStatus = "authorized";
+    (globalThis as unknown as { __preapprovalExternalRef?: string }).__preapprovalExternalRef = "cliente-que-no-existe";
+    (globalThis as unknown as { __preapprovalMonto?: number }).__preapprovalMonto = 150000;
+    const webhookRes = await dispararWebhookPreapproval("preapproval-fk");
+    expect(webhookRes.status).toBe(200);
+  });
 });

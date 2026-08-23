@@ -37,9 +37,10 @@ export async function GET(req: Request) {
   const desde = parsed.data.desde ? new Date(parsed.data.desde) : ahora;
   const hasta = parsed.data.hasta ? new Date(parsed.data.hasta) : new Date(ahora.getTime() + SEIS_SEMANAS_MS);
 
-  // Tope de rango (deuda 2.2): nadie puede pedir una ventana arbitrariamente grande.
-  if (hasta.getTime() - desde.getTime() > RANGO_MAX_MS) {
-    return Response.json({ error: "Rango de fechas demasiado amplio (máximo 12 semanas)" }, { status: 400 });
+  // Tope de rango (deuda 2.2): nadie puede pedir una ventana arbitrariamente grande,
+  // ni invertida (desde > hasta).
+  if (hasta.getTime() - desde.getTime() > RANGO_MAX_MS || hasta.getTime() < desde.getTime()) {
+    return Response.json({ error: "Rango de fechas inválido (máximo 12 semanas, desde <= hasta)" }, { status: 400 });
   }
 
   // La UI trabaja con slugs; el backend filtra por id. Si llega slug lo resolvemos.
