@@ -22,6 +22,7 @@
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "argon2": "^0.45.1",
+    "mercadopago": "^3.4.0",
     "next": "16.3.1",
     "next-auth": "^5.0.0-beta.32",
     "nodemailer": "^8.0.11",
