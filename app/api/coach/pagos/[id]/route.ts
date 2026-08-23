@@ -17,6 +17,10 @@ export async function PATCH(_req: Request, { params }: { params: Promise<{ id: s
   if (pago.medio !== "EFECTIVO") {
     return Response.json({ error: "Solo se marcan manualmente los pagos en efectivo" }, { status: 400 });
   }
+  // Bug 1.3: sin este chequeo, un pago ya REEMBOLSADO podia volver a APROBADO con un doble click.
+  if (pago.estado !== "PENDIENTE") {
+    return Response.json({ error: "Este pago ya no está pendiente" }, { status: 409 });
+  }
 
   await prisma.pago.update({ where: { id }, data: { estado: "APROBADO" } });
   return Response.json({ ok: true });
