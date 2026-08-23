@@ -5,7 +5,7 @@ import { pesosACentavos } from "../../../../lib/dinero";
 import { verificarFirmaWebhook } from "../../../../lib/mercadopago/firma";
 import { crearReservaConCupo } from "../../../../lib/reservas/crear";
 import { generarComprobantePago } from "../../../../lib/comprobantes/generar";
-import { sendComprobanteEmail } from "../../../../lib/email/templates";
+import { sendComprobanteEmail, sendCobroFallidoEmail } from "../../../../lib/email/templates";
 import { logger } from "../../../../lib/logger";
 
 export async function POST(req: Request) {
@@ -94,6 +94,9 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
     await authorizedPaymentRes.json();
 
   if (!authorizedPayment.payment || authorizedPayment.payment.status !== "approved") {
+    // La Suscripcion venció: el cobro recurrente fallo (rejected/pending/etc). Marcamos VENCIDA
+    // y avisamos. Asi cubreMensualidad deja de dar cobertura (bug 1.2 de la auditoria).
+    await marcarSuscripcionVencida(authorizedPayment.preapproval_id);
     return Response.json({ ok: true });
   }
 
@@ -120,6 +123,26 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
     }
   }
   return Response.json({ ok: true });
+}
+
+async function marcarSuscripcionVencida(preapprovalId: string | undefined): Promise<void> {
+  if (!preapprovalId) return;
+  const suscripcion = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: preapprovalId } });
+  if (!suscripcion || suscripcion.estado !== "ACTIVA") return;
+
+  await prisma.suscripcion.update({ where: { id: suscripcion.id }, data: { estado: "VENCIDA" } });
+
+  const cliente = await prisma.cliente.findUnique({ where: { id: suscripcion.clienteId }, include: { user: true } });
+  if (cliente?.user) {
+    try {
+      await sendCobroFallidoEmail(
+        cliente.user.email,
+        "No pudimos procesar tu cobro mensual. Tu acceso con cobertura de mensualidad queda pausado hasta que regularices el pago."
+      );
+    } catch (e) {
+      logger.error({ err: e, suscripcionId: suscripcion.id }, "no se pudo notificar el cobro fallido");
+    }
+  }
 }
 
 async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {

@@ -32,3 +32,13 @@ export async function sendPasswordResetEmail(to: string, link: string): Promise<
     html: `<p>Entrá a este link para elegir una nueva contraseña:</p><p><a href="${link}">${link}</a></p><p>Este link vence en 1 hora. Si no lo pediste vos, ignorá este mensaje.</p>`,
   });
 }
+
+export async function sendCobroFallidoEmail(to: string, mensaje: string): Promise<void> {
+  await mailer.sendMail({
+    from: FROM,
+    to,
+    subject: "No se pudo procesar tu cobro — Beto Training",
+    text: mensaje,
+    html: `<p>${mensaje}</p>`,
+  });
+}

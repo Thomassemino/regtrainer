@@ -76,4 +76,20 @@ describe("cubreMensualidad — regla de 1 personalizada por semana", () => {
     const { cubierta } = await cubreMensualidad(prisma, clienteId, servicio);
     expect(cubierta).toBe(true);
   });
+
+  it("una Suscripcion en VENCIDA no da cobertura (bug 1.2: cobro recurrente fallido)", async () => {
+    const servicio = await prisma.servicio.findUniqueOrThrow({ where: { id: servicioPersonalId } });
+    await prisma.suscripcion.update({ where: { clienteId }, data: { estado: "VENCIDA" } });
+    const { cubierta } = await cubreMensualidad(prisma, clienteId, servicio);
+    expect(cubierta).toBe(false);
+  });
+
+  it("una Suscripcion CANCELADA no da cobertura en un servicio pago grupal", async () => {
+    const servicioGrupal = await prisma.servicio.create({
+      data: { slug: "funcional-v", nombre: "Funcional", tag: "Grupal", duracionMin: 50, precio: 1200000, cupoMax: 8 },
+    });
+    await prisma.suscripcion.update({ where: { clienteId }, data: { estado: "CANCELADA" } });
+    const { cubierta } = await cubreMensualidad(prisma, clienteId, servicioGrupal);
+    expect(cubierta).toBe(false);
+  });
 });
