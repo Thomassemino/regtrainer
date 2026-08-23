@@ -72,5 +72,14 @@ describe("POST /api/mensualidad/cancelar", () => {
     const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
     expect(suscripcion.estado).toBe("CANCELADA");
     expect(suscripcion.canceladaEn).not.toBeNull();
+
+    // El nombre del test lo promete explícitamente: no basta con el estado, hay que
+    // verificar que cubreMensualidad siga dando acceso mientras no venza fechaProximoCobro.
+    const { cubreMensualidad } = await import("../../lib/reservas/mensualidad");
+    const servicio = await prisma.servicio.create({
+      data: { slug: "funcional", nombre: "Funcional", tag: "Grupal", duracionMin: 50, precio: 1200000, cupoMax: 8 },
+    });
+    const { cubierta } = await cubreMensualidad(prisma, cliente.id, servicio);
+    expect(cubierta).toBe(true);
   });
 });

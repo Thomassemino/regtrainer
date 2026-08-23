@@ -24,7 +24,16 @@ export async function cubreMensualidad(
   }
 
   const suscripcion = await tx.suscripcion.findUnique({ where: { clienteId } });
-  if (!suscripcion || suscripcion.estado !== "ACTIVA") {
+  if (!suscripcion) {
+    return { cubierta: false };
+  }
+  // spec §7.2.5: una suscripcion CANCELADA sigue dando acceso hasta fechaProximoCobro
+  // (ya esta pago ese periodo) — VENCIDA (cobro fallido) corta la cobertura de inmediato.
+  const fechaReferencia = fechaClase ?? new Date();
+  const tieneCobertura =
+    suscripcion.estado === "ACTIVA" ||
+    (suscripcion.estado === "CANCELADA" && suscripcion.fechaProximoCobro > fechaReferencia);
+  if (!tieneCobertura) {
     return { cubierta: false };
   }
 
