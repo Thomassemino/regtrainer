@@ -330,6 +330,4 @@ model Pago {
   reserva       Reserva?
   creadoEn      DateTime     @default(now())
   actualizadoEn DateTime     @updatedAt
-
-  @@index([mpPaymentId])
 }
