@@ -135,49 +135,53 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
 
   const suscripcion = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: authorizedPayment.preapproval_id } });
   if (suscripcion) {
-    // Idempotente: la actualización de estado/fecha se hace SIEMPRE (esté o no el
-    // pago registrado), así un crash a mitad de camino no deja la suscripción
-    // VENCIDA sin reactivar en el reintento de la notificación. SOLO se reactiva
-    // cuando no hay una cancelación explícita del cliente (CANCELADA/canceladaEn):
-    // un cobro aislado posterior no debe revivir una suscripción que el usuario
-    // canceló (hallazgo de re-juicio, ambos jueces).
     const reactivable = !suscripcion.canceladaEn && suscripcion.estado !== "CANCELADA";
+
+    const mpPaymentId = String(authorizedPayment.payment.id);
+    const yaRegistrado = await prisma.pago.findFirst({ where: { suscripcionId: suscripcion.id, mpPaymentId } });
+
+    if (yaRegistrado) {
+      // La notificación ya fue procesada: SOLO reaffirmar el estado (crash-recovery
+      // idempotente: si el update anterior falló y el pago nuevo ya existe) sin
+      // re-avanzar la fecha de cobro ni reactivar una VENCIDA sin cobro nuevo.
+      if (reactivable && suscripcion.estado !== "ACTIVA") {
+        await prisma.suscripcion.update({
+          where: { id: suscripcion.id },
+          data: { estado: "ACTIVA", canceladaEn: null },
+        });
+      }
+      return Response.json({ ok: true });
+    }
+
+    try {
+      await prisma.pago.create({
+        data: {
+          clienteId: suscripcion.clienteId,
+          tipo: "MENSUALIDAD",
+          medio: "MERCADO_PAGO",
+          monto: suscripcion.precio,
+          estado: "APROBADO",
+          mpPaymentId,
+          suscripcionId: suscripcion.id,
+        },
+      });
+    } catch (e) {
+      // Dos notificaciones idénticas en vuelo pueden pasar el findFirst y chocar
+      // contra el @unique de mpPaymentId (P2002): el ganador ya creó el Pago,
+      // tratamos el perdedor como éxito y NO avanzamos la fecha ni re-activamos.
+      const esDuplicado = e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+      if (!esDuplicado) throw e;
+      return Response.json({ ok: true });
+    }
+
+    // Cobro nuevo procesado: avanzar fecha; re-activar solo si la suscripción
+    // NO fue cancelada explícitamente por el cliente.
     await prisma.suscripcion.update({
       where: { id: suscripcion.id },
       data: reactivable
         ? { estado: "ACTIVA", canceladaEn: null, fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
         : { fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
     });
-
-    const mpPaymentId = String(authorizedPayment.payment.id);
-    const yaRegistrado = await prisma.pago.findFirst({ where: { suscripcionId: suscripcion.id, mpPaymentId } });
-    if (!yaRegistrado) {
-      try {
-        await prisma.pago.create({
-          data: {
-            clienteId: suscripcion.clienteId,
-            tipo: "MENSUALIDAD",
-            medio: "MERCADO_PAGO",
-            monto: suscripcion.precio,
-            estado: "APROBADO",
-            mpPaymentId,
-            suscripcionId: suscripcion.id,
-          },
-        });
-      } catch (e) {
-        // Dos notificaciones idénticas en vuelo pueden pasar el findFirst y chocar
-        // contra el @unique de mpPaymentId (P2002): el perdedor no es un error real
-        // (el Pago ya existe), MP reintentará igualmente — tratarlo como éxito.
-        const esDuplicado = e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
-        if (!esDuplicado) throw e;
-      }
-      // Solo el cobro que creó el Pago avanza la fecha de próximo cobro; una
-      // notificación duplicada re-sentida no debe empujarla de nuevo (Judge B, SUG).
-      await prisma.suscripcion.update({
-        where: { id: suscripcion.id },
-        data: { fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-      });
-    }
   }
   return Response.json({ ok: true });
 }
@@ -250,7 +254,7 @@ async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
             estado: "CANCELADA",
             precio,
             fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            canceladaLa: existenteActual!.canceladaEn,
+            canceladaEn: existenteActual!.canceladaEn,
           }
         : {
             estado: "ACTIVA",

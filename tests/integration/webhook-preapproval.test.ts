@@ -141,4 +141,65 @@ describe("POST /api/pagos/mensualidad + POST /api/webhooks (subscription_preappr
     const webhookRes = await dispararWebhookPreapproval("preapproval-fk");
     expect(webhookRes.status).toBe(200);
   });
+
+  it("un authorized tardio del MISMO preapproval que el cliente canceló NO revive la cancelacion", async () => {
+    const user = await prisma.user.create({
+      data: { email: "preapproval-no-revive@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({
+      data: { userId: user.id, nombre: "Preapro No Revive", iniciales: "PNR", objetivo: "" },
+    });
+    const canceladaEn = new Date();
+    await prisma.suscripcion.create({
+      data: {
+        clienteId: cliente.id,
+        estado: "CANCELADA",
+        precio: 15000000,
+        fechaProximoCobro: new Date(),
+        mpPreapprovalId: "preapproval-cancelado-mismo",
+        canceladaEn,
+      },
+    });
+
+    (globalThis as unknown as { __preapprovalStatus?: string }).__preapprovalStatus = "authorized";
+    (globalThis as unknown as { __preapprovalExternalRef?: string }).__preapprovalExternalRef = cliente.id;
+    (globalThis as unknown as { __preapprovalMonto?: number }).__preapprovalMonto = 150000;
+    const webhookRes = await dispararWebhookPreapproval("preapproval-cancelado-mismo");
+    expect(webhookRes.status).toBe(200);
+
+    const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
+    // Sigue CANCELADA y con su canceladaEn intacta (no se des-canceló el acceso).
+    expect(suscripcion.estado).toBe("CANCELADA");
+    expect(suscripcion.canceladaEn?.toISOString()).toBe(canceladaEn.toISOString());
+  });
+
+  it("un authorized de un preapproval NUEVO (id distinto) tras una cancelacion es una re-suscripcion y activa", async () => {
+    const user = await prisma.user.create({
+      data: { email: "preapproval-resus@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({
+      data: { userId: user.id, nombre: "Preapro Resus", iniciales: "PR", objetivo: "" },
+    });
+    await prisma.suscripcion.create({
+      data: {
+        clienteId: cliente.id,
+        estado: "CANCELADA",
+        precio: 15000000,
+        fechaProximoCobro: new Date(),
+        mpPreapprovalId: "preapproval-viejo",
+        canceladaEn: new Date(),
+      },
+    });
+
+    (globalThis as unknown as { __preapprovalStatus?: string }).__preapprovalStatus = "authorized";
+    (globalThis as unknown as { __preapprovalExternalRef?: string }).__preapprovalExternalRef = cliente.id;
+    (globalThis as unknown as { __preapprovalMonto?: number }).__preapprovalMonto = 150000;
+    const webhookRes = await dispararWebhookPreapproval("preapproval-nuevo");
+    expect(webhookRes.status).toBe(200);
+
+    const suscripcion = await prisma.suscripcion.findUniqueOrThrow({ where: { clienteId: cliente.id } });
+    expect(suscripcion.estado).toBe("ACTIVA");
+    expect(suscripcion.mpPreapprovalId).toBe("preapproval-nuevo");
+    expect(suscripcion.canceladaEn).toBeNull();
+  });
 });
