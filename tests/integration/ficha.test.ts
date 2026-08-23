@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../../lib/db";
 import { hashPassword } from "../../lib/auth/hash";
 import { calcularCumplimientoUltimasSemanas } from "../../lib/rutinas/cumplimiento";
+
+vi.mock("../../lib/auth", () => ({ auth: vi.fn().mockResolvedValue(null) }));
 
 let clienteId: string;
 let asignacionId: string;
@@ -46,6 +48,13 @@ beforeEach(async () => {
   asignacionId = asignacion.id;
 });
 
+const { auth } = await import("../../lib/auth");
+const mockAuth = auth as unknown as { mockResolvedValue: (v: unknown) => void };
+
+afterEach(() => {
+  mockAuth.mockResolvedValue(null);
+});
+
 describe("calcularCumplimientoUltimasSemanas", () => {
   it("da 100% en la semana con el único bloque completado y 0% si no hay ninguno", async () => {
     await prisma.bloqueCompletado.create({ data: { asignacionId, bloqueId, semana: 1 } });
@@ -59,5 +68,22 @@ describe("GET /api/coach/clientes/:clienteId sin sesión", () => {
     const { GET } = await import("../../app/api/coach/clientes/[clienteId]/route");
     const res = await GET(new Request(`http://localhost/api/coach/clientes/${clienteId}`), { params: Promise.resolve({ clienteId }) });
     expect(res.status).toBe(401);
+  });
+});
+
+describe("GET /api/coach/clientes/:clienteId — cumplimiento usa la semana real, no el total del programa", () => {
+  it("un programa de 8 semanas recién asignado devuelve cumplimiento de la semana 1, no de las semanas 5-8", async () => {
+    await prisma.programa.update({ where: { id: (await prisma.asignacionPrograma.findUniqueOrThrow({ where: { id: asignacionId } })).programaId }, data: { semanas: 8 } });
+    await prisma.bloqueCompletado.create({ data: { asignacionId, bloqueId, semana: 1 } });
+
+    mockAuth.mockResolvedValue({ user: { role: "ADMIN" } });
+    const { GET } = await import("../../app/api/coach/clientes/[clienteId]/route");
+    const res = await GET(new Request(`http://localhost/api/coach/clientes/${clienteId}`), { params: Promise.resolve({ clienteId }) });
+    const body = await res.json();
+
+    const semanas = body.cumplimiento.map((c: { semana: number }) => c.semana);
+    expect(semanas).toContain(1);
+    expect(semanas).not.toContain(8); // el bug reportado devolvía [5,6,7,8] para un programa recién asignado
+    expect(body.cumplimiento.find((c: { semana: number }) => c.semana === 1).porcentaje).toBe(100);
   });
 });

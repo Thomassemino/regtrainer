@@ -31,7 +31,9 @@ describe("proxy function", () => {
   it("redirige a /login cuando no hay sesión en /coach", async () => {
     mockAuth.mockResolvedValue(null);
     const res = await proxy(new NextRequest("http://localhost/coach"));
-    expect(res.status).toBe(302);
+    // NextResponse.redirect() sin status explícito devuelve 307 (Temporary Redirect) en Next.js 16 —
+    // no 302. Comportamiento real de la librería, no un bug de proxy.ts.
+    expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/login");
   });
 

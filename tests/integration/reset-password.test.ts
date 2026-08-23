@@ -3,7 +3,7 @@ import { prisma } from "../../lib/db";
 import { hashPassword, verifyPassword } from "../../lib/auth/hash";
 import { generateToken } from "../../lib/auth/tokens";
 
-vi.mock("../../lib/email/templates", () => ({ sendPasswordResetEmail: vi.fn() }));
+vi.mock("../../lib/email/templates", () => ({ sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined) }));
 
 let userId: string;
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../../lib/db";
 
 vi.mock("../../lib/email/templates", () => ({
-  sendVerificationEmail: vi.fn(),
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 beforeEach(async () => {
@@ -45,7 +45,7 @@ describe("GET /api/auth/verificar-email", () => {
     await POST(
       new Request("http://localhost/api/auth/registro", {
         method: "POST",
-        body: JSON.stringify({ email: "verificar@example.com", password: "Password123", nombre: "Y" }),
+        body: JSON.stringify({ email: "verificar@example.com", password: "Password123", nombre: "Yolanda" }),
       }) as unknown as Request
     );
     const user = await prisma.user.findUniqueOrThrow({ where: { email: "verificar@example.com" } });
