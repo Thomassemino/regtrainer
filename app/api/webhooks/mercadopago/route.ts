@@ -121,7 +121,8 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
   }
 
   const statusPago = authorizedPayment.payment.status;
-  if (statusPago === "rejected" || statusPago === "cancelled" || statusPago === "refunded") {
+  const estadosTerminalDeFallo = ["rejected", "cancelled", "refunded", "charged_back"];
+  if (estadosTerminalDeFallo.includes(statusPago)) {
     // Cobro recurrente falló de forma DEFINITIVA (no pending/in_process, que son
     // transitorios y pueden aprobarse en un reintento). Marcamos VENCIDA y avisamos.
     await marcarSuscripcionVencida(authorizedPayment.preapproval_id);
@@ -134,6 +135,20 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
 
   const suscripcion = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: authorizedPayment.preapproval_id } });
   if (suscripcion) {
+    // Idempotente: la actualización de estado/fecha se hace SIEMPRE (esté o no el
+    // pago registrado), así un crash a mitad de camino no deja la suscripción
+    // VENCIDA sin reactivar en el reintento de la notificación. SOLO se reactiva
+    // cuando no hay una cancelación explícita del cliente (CANCELADA/canceladaEn):
+    // un cobro aislado posterior no debe revivir una suscripción que el usuario
+    // canceló (hallazgo de re-juicio, ambos jueces).
+    const reactivable = !suscripcion.canceladaEn && suscripcion.estado !== "CANCELADA";
+    await prisma.suscripcion.update({
+      where: { id: suscripcion.id },
+      data: reactivable
+        ? { estado: "ACTIVA", canceladaEn: null, fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+        : { fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+    });
+
     const mpPaymentId = String(authorizedPayment.payment.id);
     const yaRegistrado = await prisma.pago.findFirst({ where: { suscripcionId: suscripcion.id, mpPaymentId } });
     if (!yaRegistrado) {
@@ -146,15 +161,6 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
           estado: "APROBADO",
           mpPaymentId,
           suscripcionId: suscripcion.id,
-        },
-      });
-      await prisma.suscripcion.update({
-        where: { id: suscripcion.id },
-        data: {
-          // Un cobro aprobado posterior reintegra la cobertura si había quedado VENCIDA.
-          estado: "ACTIVA",
-          canceladaEn: null,
-          fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });
     }
@@ -246,7 +252,9 @@ async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
         throw e;
       }
     }
-  } else {
+  } else if (preapproval.status === "cancelled") {
+    // Solo la cancelación EXPLÍCITA del preapproval marca CANCELADA. Estados como
+    // paused/pending son transitorios y no deben matar una suscripción viva.
     const existente = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: dataId } });
     if (existente) {
       await prisma.suscripcion.update({
