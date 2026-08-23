@@ -4,9 +4,16 @@ export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
   // `next dev` compila rutinas on-demand: correr los tests en paralelo multiplica la
-  // contención y hace flaky el arranque. Con un solo worker es secuencial y estable.
+  // contención y hace flaky el arranque. Con un solo worker es secuencial y estable,
+  // y un timeout global holgado absorbe la primera compilación en frío de los routings.
   workers: 1,
   fullyParallel: false,
+  timeout: 90000,
+  expect: {
+    // El expect timeout por defecto (5s) es muy corto para el primer render de la SPA
+    // tras la compilación on-demand de `next dev`; un margen holgado evita falsos flaky.
+    timeout: 20000,
+  },
   webServer: {
     command: "npm run dev",
     url: "http://localhost:3000",
