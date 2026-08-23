@@ -70,6 +70,20 @@ export default function Builder({ vals }: { vals: BetoVals }) {
     await fetch(`/api/coach/dias/${diaId}`, { method: "PATCH", body: JSON.stringify({ calentamiento }) });
   };
 
+  const duplicarDia = async (origenDiaId: string, destinoDiaId: string) => {
+    const res = await fetch(`/api/coach/dias/${origenDiaId}/duplicar`, {
+      method: "POST",
+      body: JSON.stringify({ destinoDiaId }),
+    });
+    if (res.ok) {
+      vals.showToast("Día duplicado");
+      await cargar();
+    } else {
+      const data = await res.json().catch(() => null);
+      vals.showToast(data?.error ?? "No se pudo duplicar el día");
+    }
+  };
+
   const onDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !programa) return;
@@ -134,7 +148,7 @@ export default function Builder({ vals }: { vals: BetoVals }) {
                 style={{
                   width: 28, height: 24, borderRadius: 6, fontSize: 13, border: 0, cursor: "pointer",
                   background: vals.semanaSel === semana ? "rgba(145,132,217,.18)" : "transparent",
-                  color: vals.semanaSel === semana ? "#d2cefd" : "rgba(233,233,237,.6)",
+                  color: vals.semanaSel === semana ? "var(--color-accent-300)" : "rgba(233,233,237,.6)",
                 }}
               >
                 {semana}
@@ -156,14 +170,16 @@ export default function Builder({ vals }: { vals: BetoVals }) {
             <ColumnaDia
               key={dia.id}
               dia={dia}
+              diasDisponibles={diasOrdenados.filter((d) => d.id !== dia.id)}
               onAbrirEditor={vals.abrirEditor}
               onConvertirEntrenable={convertirEntrenable}
               onCambiarCalentamiento={cambiarCalentamiento}
+              onDuplicarDia={duplicarDia}
             />
           ))}
           {diasOrdenados.length < 7 && <div style={{ width: "100%", maxWidth: 320, minHeight: 300 }} />}
 
-          <div style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "#1b1d2c", padding: 14, minHeight: 300 }}>
+          <div style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300 }}>
             <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "var(--color-accent)" }}>Volumen semanal</div>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 28, fontWeight: 500, marginTop: 6 }}>{volumen.seriesTotales} series</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14, fontSize: 12.5 }}>

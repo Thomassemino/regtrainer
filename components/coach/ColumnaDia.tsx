@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { DiaProgramaApi } from "@/lib/types";
@@ -8,20 +9,34 @@ import TarjetaBloque from "./TarjetaBloque";
 
 export default function ColumnaDia({
   dia,
+  diasDisponibles,
   onAbrirEditor,
   onConvertirEntrenable,
   onCambiarCalentamiento,
+  onDuplicarDia,
 }: {
   dia: DiaProgramaApi;
+  diasDisponibles: DiaProgramaApi[];
   onAbrirEditor: (diaId: string, bloqueId: string | null) => void;
   onConvertirEntrenable: (diaId: string) => void;
   onCambiarCalentamiento: (diaId: string, valor: string) => void;
+  onDuplicarDia: (origenDiaId: string, destinoDiaId: string) => void;
 }) {
   const { setNodeRef } = useDroppable({ id: dia.id, data: { esColumna: true } });
+  const [duplicando, setDuplicando] = useState(false);
+
+  const elegirDestino = (destinoDiaId: string) => {
+    setDuplicando(false);
+    if (!destinoDiaId) return;
+    const nombreDestino = NOMBRES_DIA[diasDisponibles.find((d) => d.id === destinoDiaId)?.diaSemana ?? 0];
+    if (window.confirm(`Esto reemplaza lo que tenga cargado ${nombreDestino}. ¿Duplicar ${NOMBRES_DIA[dia.diaSemana]} ahí?`)) {
+      onDuplicarDia(dia.id, destinoDiaId);
+    }
+  };
 
   if (dia.descanso) {
     return (
-      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "#1b1d2c", padding: 14, minHeight: 300, display: "flex", flexDirection: "column" }}>
+      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column" }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{NOMBRES_DIA[dia.diaSemana]}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--color-surface)", display: "grid", placeItems: "center" }}>
@@ -37,10 +52,37 @@ export default function ColumnaDia({
   }
 
   return (
-    <div ref={setNodeRef} style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "#1b1d2c", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+    <div ref={setNodeRef} style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{NOMBRES_DIA[dia.diaSemana]}</div>
-        <div style={{ fontSize: 11, opacity: 0.4 }}>{dia.bloques.length > 0 ? `${dia.bloques.length} bloques` : "Sin cargar"}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: 11, opacity: 0.4 }}>{dia.bloques.length > 0 ? `${dia.bloques.length} bloques` : "Sin cargar"}</div>
+          {diasDisponibles.length > 0 && (
+            duplicando ? (
+              <select
+                autoFocus
+                defaultValue=""
+                onChange={(e) => elegirDestino(e.target.value)}
+                onBlur={() => setDuplicando(false)}
+                style={{ fontSize: 11, background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-divider)", borderRadius: 6 }}
+              >
+                <option value="" disabled>Duplicar en…</option>
+                {diasDisponibles.map((d) => (
+                  <option key={d.id} value={d.id}>{NOMBRES_DIA[d.diaSemana]}</option>
+                ))}
+              </select>
+            ) : (
+              <button
+                onClick={() => setDuplicando(true)}
+                className="btn btn-ghost"
+                title="Duplicar día"
+                style={{ padding: 2, minWidth: 0, height: "auto" }}
+              >
+                <i className="ph ph-copy" />
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       <div>

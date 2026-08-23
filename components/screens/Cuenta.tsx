@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import ImageSlot from "@/components/ImageSlot";
-
-function calcularSemanaActual(asignadoEnIso: string, semanasDelPrograma: number): number {
-  const msPorSemana = 7 * 24 * 60 * 60 * 1000;
-  const transcurridas = Math.floor((Date.now() - new Date(asignadoEnIso).getTime()) / msPorSemana);
-  return Math.min(Math.max(transcurridas + 1, 1), semanasDelPrograma);
-}
+import { calcularSemanaActual } from "@/lib/rutinas/semana-actual";
 
 interface SesionRow {
   id: string;
@@ -162,7 +157,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
                         <button
                           key={d.id}
                           onClick={() => vals.setDiaClienteSel(i)}
-                          style={{ cursor: "pointer", fontSize: 13, padding: "9px 15px", borderRadius: 99, border: `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`, background: on ? "rgba(145,132,217,.16)" : "transparent", color: on ? "#d2cefd" : "#e9e9ed" }}
+                          style={{ cursor: "pointer", fontSize: 13, padding: "9px 15px", borderRadius: 99, border: `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`, background: on ? "rgba(145,132,217,.16)" : "transparent", color: on ? "var(--color-accent-300)" : "var(--color-text)" }}
                         >
                           {NOMBRES_DIA[d.diaSemana]}
                         </button>

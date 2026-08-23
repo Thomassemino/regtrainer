@@ -5,6 +5,7 @@
 :root {
   --color-bg: #161826;
   --color-surface: #232532;
+  --color-surface-sunken: #1b1d2c; /* paso entre --color-bg y --color-surface, usado por el constructor de rutinas */
   --color-text: #e9e9ed;
   --color-accent: #9184d9;
   --color-accent-2: #a7a1db;

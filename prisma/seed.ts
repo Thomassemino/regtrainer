@@ -2,6 +2,8 @@ import { prisma } from "../lib/db";
 import { hashPassword } from "../lib/auth/hash";
 import { pesosACentavos } from "../lib/dinero";
 
+// cupoMax es un valor demo (ver docs/superpowers/plans/2026-08-22-booking-pagos.md, Task 2)
+// — confirmar con Beto antes de producción, no está tomado de ningún dato de negocio real.
 const SERVICIOS_SEED = [
   { slug: "personal", nombre: "Personalizado 1 a 1", tag: "Estrella", duracionMin: 60, precioPesos: 22000, cupoMax: 1 },
   { slug: "funcional", nombre: "Funcional / HIIT", tag: "Grupal", duracionMin: 50, precioPesos: 12000, cupoMax: 8 },

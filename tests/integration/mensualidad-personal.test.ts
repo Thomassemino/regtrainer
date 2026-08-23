@@ -51,6 +51,19 @@ describe("cubreMensualidad — regla de 1 personalizada por semana", () => {
     expect(cubierta).toBe(false);
   });
 
+  it("una reserva de personal en LISTA_ESPERA no cuenta contra el límite semanal (bug corregido en Judgment Day)", async () => {
+    const servicio = await prisma.servicio.findUniqueOrThrow({ where: { id: servicioPersonalId } });
+    const clase1 = await prisma.clase.create({
+      data: { servicioId: servicioPersonalId, fecha: new Date("2026-08-18T09:00:00.000Z"), cupoMax: 1 },
+    });
+    await prisma.reserva.create({
+      data: { clienteId, claseId: clase1.id, estado: "LISTA_ESPERA", viaMensualidad: true },
+    });
+
+    const { cubierta } = await cubreMensualidad(prisma, clienteId, servicio);
+    expect(cubierta).toBe(true);
+  });
+
   it("una reserva de personal cancelada no cuenta contra el límite semanal", async () => {
     const servicio = await prisma.servicio.findUniqueOrThrow({ where: { id: servicioPersonalId } });
     const clase1 = await prisma.clase.create({

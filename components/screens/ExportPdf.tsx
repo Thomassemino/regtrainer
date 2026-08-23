@@ -12,9 +12,10 @@ const TEMAS: { id: TemaPdf; nombre: string; sub: string; icono: string; fondo: s
 export default function ExportPdf({ vals }: { vals: BetoVals }) {
   const descargar = () => {
     if (!vals.programaIdActivo) return;
+    const clienteQuery = vals.fichaId ? `&clienteId=${vals.fichaId}` : "";
     // Navegación intencional a un endpoint que descarga el PDF (no una página interna).
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = `/api/coach/programas/${vals.programaIdActivo}/pdf?tema=${vals.temaPdfSel}`;
+    window.location.href = `/api/coach/programas/${vals.programaIdActivo}/pdf?tema=${vals.temaPdfSel}${clienteQuery}`;
     vals.showToast("PDF generado con la marca de Beto Training");
   };
 
@@ -39,7 +40,7 @@ export default function ExportPdf({ vals }: { vals: BetoVals }) {
             <div
               key={t.id}
               onClick={() => { vals.setTemaPdfSel(t.id); vals.showToast(`Tema ${t.nombre} seleccionado`); }}
-              style={{ cursor: "pointer", padding: 18, borderRadius: 14, border: `1px solid ${elegido ? "var(--color-accent)" : "var(--color-divider)"}`, background: "#1b1d2c", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}
+              style={{ cursor: "pointer", padding: 18, borderRadius: 14, border: `1px solid ${elegido ? "var(--color-accent)" : "var(--color-divider)"}`, background: "var(--color-surface-sunken)", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}
             >
               <div style={{ width: "100%", maxWidth: 280, borderRadius: 14, padding: 16, fontSize: 11, background: t.fondo, color: t.texto }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>

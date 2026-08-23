@@ -23,7 +23,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const previewUrl = `${origin}/coach/programas/${id}/pdf-preview?tema=${tema}`;
   const pdf = await renderPdfConSesion(previewUrl, cookie, origin);
 
-  await prisma.asignacionPrograma.updateMany({ where: { programaId: id }, data: { temaPdf: tema } });
+  // Solo actualiza el temaPdf de la asignación del cliente para el que se está descargando
+  // (spec §4: "último tema exportado para este cliente+programa") — sin clienteId no se toca
+  // ninguna asignación, para no pisar el tema elegido de otros clientes del mismo programa.
+  const clienteId = url.searchParams.get("clienteId");
+  if (clienteId) {
+    await prisma.asignacionPrograma.updateMany({ where: { programaId: id, clienteId }, data: { temaPdf: tema } });
+  }
 
   return new Response(new Uint8Array(pdf), {
     headers: {

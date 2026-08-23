@@ -79,7 +79,7 @@ export default function EditorEjercicio({
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "grid", placeItems: "center", padding: 24, background: "rgba(22,24,38,.72)", backdropFilter: "blur(4px)" }}>
-      <div style={{ width: "min(860px,100%)", maxHeight: "88vh", overflow: "auto", borderRadius: 16, background: "#1b1d2c", boxShadow: "0 0 0 1px #3f424d, 0 16px 40px rgba(0,0,0,.65)", padding: "20px 22px" }}>
+      <div style={{ width: "min(860px,100%)", maxHeight: "88vh", overflow: "auto", borderRadius: 16, background: "var(--color-surface-sunken)", boxShadow: "0 0 0 1px var(--color-neutral-800), 0 16px 40px rgba(0,0,0,.65)", padding: "20px 22px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
           <span className="tag tag-outline">Por series</span>
           <button className="btn btn-secondary" disabled title="Próximamente">

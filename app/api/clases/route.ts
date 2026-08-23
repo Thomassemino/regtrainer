@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../../../lib/db";
 import { ensureClasesGeneradas } from "../../../lib/clases/generar";
+import { logger } from "../../../lib/logger";
 
 const QuerySchema = z.object({
   servicioId: z.string().min(1).optional(),
@@ -9,8 +10,6 @@ const QuerySchema = z.object({
 });
 
 const SEIS_SEMANAS_MS = 6 * 7 * 24 * 60 * 60 * 1000;
-
-import { logger } from "../../../lib/logger";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -22,7 +21,6 @@ export async function GET(req: Request) {
     return Response.json({ error: "Servicio temporalmente no disponible" }, { status: 503 });
   }
 
-  // El resto sigue con las mismas variables url/parsed
   const parsed = QuerySchema.safeParse({
     servicioId: url.searchParams.get("servicioId") ?? undefined,
     desde: url.searchParams.get("desde") ?? undefined,

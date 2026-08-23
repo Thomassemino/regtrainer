@@ -1,6 +1,7 @@
 import { prisma } from "../../../../../lib/db";
 import { requireAdmin } from "../../../../../lib/coach/guards";
 import { calcularCumplimientoUltimasSemanas } from "../../../../../lib/rutinas/cumplimiento";
+import { calcularSemanaActual } from "../../../../../lib/rutinas/semana-actual";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ clienteId: string }> }) {
   const check = await requireAdmin();
@@ -22,7 +23,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ cliente
 
   const asignacionActiva = cliente.asignaciones[0] ?? null;
   const cumplimiento = asignacionActiva
-    ? await calcularCumplimientoUltimasSemanas(prisma, asignacionActiva.id, asignacionActiva.programa.semanas)
+    ? await calcularCumplimientoUltimasSemanas(
+        prisma,
+        asignacionActiva.id,
+        calcularSemanaActual(asignacionActiva.asignadoEn, asignacionActiva.programa.semanas),
+      )
     : [];
 
   return Response.json({ cliente, cumplimiento });
