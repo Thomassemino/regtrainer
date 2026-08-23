@@ -48,12 +48,12 @@ function LoginInner() {
         <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Acceso</div>
         <h1 style={{ fontSize: 44, lineHeight: 1.05, letterSpacing: "-0.035em", margin: "12px 0 0" }}>Entrá a tu cuenta</h1>
         <p style={{ fontSize: 15, lineHeight: 1.6, opacity: .7, margin: "14px 0 0", textWrap: "pretty" }}>
-          Tus reservas, tu rutina, tus bonos y tus pagos en un solo lugar. Si ya compraste una clase, ya tenés cuenta.
+          Tus reservas, tu rutina, tu mensualidad y tus pagos en un solo lugar. Si ya compraste una clase, ya tenés cuenta.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 24 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13.5, lineHeight: 1.45 }}>
             <i className="ph ph-ticket" style={{ fontSize: 17, color: "var(--color-accent)", marginTop: 1 }} />
-            <span style={{ opacity: .8 }}>Reservás y usás los créditos de tu bono</span>
+            <span style={{ opacity: .8 }}>Reservás y pagás tu clase o tu mensualidad online</span>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13.5, lineHeight: 1.45 }}>
             <i className="ph ph-barbell" style={{ fontSize: 17, color: "var(--color-accent)", marginTop: 1 }} />

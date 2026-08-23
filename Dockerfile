@@ -11,7 +11,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.62.1-jammy AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # El server standalone de Next bindea por defecto al HOSTNAME que le da Docker

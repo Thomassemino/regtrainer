@@ -81,12 +81,12 @@ async function main() {
   });
 
   const clientesDemo = [
-    { email: "camila.f@example.com", nombre: "Camila Ferreyra", iniciales: "CF", objetivo: "Volver a correr sin dolor de rodilla", plan: "Bono 8 · 6 clases" },
+    { email: "camila.f@example.com", nombre: "Camila Ferreyra", iniciales: "CF", objetivo: "Volver a correr sin dolor de rodilla", plan: "Mensualidad" },
     { email: "martin.d@example.com", nombre: "Martín Duarte", iniciales: "MD", objetivo: "Ganar fuerza en tren superior", plan: "Mensualidad" },
-    { email: "sofia.l@example.com", nombre: "Sofía Lema", iniciales: "SL", objetivo: "Bajar grasa y sostener la rutina", plan: "Bono 4 · 2 clases" },
+    { email: "sofia.l@example.com", nombre: "Sofía Lema", iniciales: "SL", objetivo: "Bajar grasa y sostener la rutina", plan: "Clase suelta" },
     { email: "lucia.g@example.com", nombre: "Lucía Giménez", iniciales: "LG", objetivo: "Primera vez en el gimnasio", plan: "Evaluación inicial" },
     { email: "nicolas.p@example.com", nombre: "Nicolás Pereyra", iniciales: "NP", objetivo: "Bajar la marca en 10K", plan: "Mensualidad" },
-    { email: "julieta.r@example.com", nombre: "Julieta Ríos", iniciales: "JR", objetivo: "Rehabilitación de hombro", plan: "Bono 8 · 4 clases" },
+    { email: "julieta.r@example.com", nombre: "Julieta Ríos", iniciales: "JR", objetivo: "Rehabilitación de hombro", plan: "Mensualidad" },
   ];
 
   if (process.env.SEED_DEMO_DATA === "true") {

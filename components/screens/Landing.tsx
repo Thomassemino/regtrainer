@@ -87,7 +87,7 @@ export default function Landing({ vals }: { vals: BetoVals }) {
 
       <div id="precios" style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0", scrollMarginTop: 70 }}>
         <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Precios</div>
-        <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 6px" }}>Clases sueltas, bonos o mensualidad</h2>
+        <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 6px" }}>Clase suelta o mensualidad</h2>
         <p style={{ fontSize: 14, opacity: .6, margin: "0 0 26px" }}>Todos los valores en pesos argentinos. Cancelás sin costo hasta 6 h antes.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
           {vals.packs.map((p) => (
