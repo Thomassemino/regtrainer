@@ -152,16 +152,30 @@ async function manejarSubscriptionAutorizado(dataId: string): Promise<Response> 
     const mpPaymentId = String(authorizedPayment.payment.id);
     const yaRegistrado = await prisma.pago.findFirst({ where: { suscripcionId: suscripcion.id, mpPaymentId } });
     if (!yaRegistrado) {
-      await prisma.pago.create({
-        data: {
-          clienteId: suscripcion.clienteId,
-          tipo: "MENSUALIDAD",
-          medio: "MERCADO_PAGO",
-          monto: suscripcion.precio,
-          estado: "APROBADO",
-          mpPaymentId,
-          suscripcionId: suscripcion.id,
-        },
+      try {
+        await prisma.pago.create({
+          data: {
+            clienteId: suscripcion.clienteId,
+            tipo: "MENSUALIDAD",
+            medio: "MERCADO_PAGO",
+            monto: suscripcion.precio,
+            estado: "APROBADO",
+            mpPaymentId,
+            suscripcionId: suscripcion.id,
+          },
+        });
+      } catch (e) {
+        // Dos notificaciones idénticas en vuelo pueden pasar el findFirst y chocar
+        // contra el @unique de mpPaymentId (P2002): el perdedor no es un error real
+        // (el Pago ya existe), MP reintentará igualmente — tratarlo como éxito.
+        const esDuplicado = e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+        if (!esDuplicado) throw e;
+      }
+      // Solo el cobro que creó el Pago avanza la fecha de próximo cobro; una
+      // notificación duplicada re-sentida no debe empujarla de nuevo (Judge B, SUG).
+      await prisma.suscripcion.update({
+        where: { id: suscripcion.id },
+        data: { fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
       });
     }
   }
@@ -218,17 +232,37 @@ async function manejarPreapprovalAutorizado(dataId: string): Promise<Response> {
     if (!montoPesos) {
       logger.warn({ dataId, clienteId }, "preapproval sin transaction_amount; se usa precio default");
     }
+
+    // No reactivar una suscripción que el cliente canceló EXPLÍCITAMENTE sobre este
+    // mismo preapproval: una notificación authorized tardía no debe revivirla (misma
+    // regla que el cobro recurrente en manejarSubscriptionAutorizado). Un preapproval
+    // con OTRO id es una re-suscripción nueva y sí activa (upsert update normal).
+    const existenteActual = await prisma.suscripcion.findUnique({ where: { clienteId } }).catch(() => null);
+    const esElMismoPreapprovalCancelado =
+      !!existenteActual &&
+      existenteActual.mpPreapprovalId === dataId &&
+      (existenteActual.canceladaEn !== null || existenteActual.estado === "CANCELADA");
+
     try {
+      const dataUpsert = esElMismoPreapprovalCancelado
+        ? {
+            // Mantiene CANCELADA y su canceladaEn pero actualiza el resto de datos.
+            estado: "CANCELADA",
+            precio,
+            fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            canceladaLa: existenteActual!.canceladaEn,
+          }
+        : {
+            estado: "ACTIVA",
+            precio,
+            fechaInicio: new Date(),
+            fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            mpPreapprovalId: dataId,
+            canceladaEn: null,
+          };
       await prisma.suscripcion.upsert({
         where: { clienteId },
-        update: {
-          estado: "ACTIVA",
-          precio,
-          fechaInicio: new Date(),
-          fechaProximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          mpPreapprovalId: dataId,
-          canceladaEn: null,
-        },
+        update: dataUpsert,
         create: {
           clienteId,
           estado: "ACTIVA",
