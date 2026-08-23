@@ -14,6 +14,10 @@ RUN npm run build
 FROM mcr.microsoft.com/playwright:v1.62.1-jammy AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# El server standalone de Next bindea por defecto al HOSTNAME que le da Docker
+# (id del contenedor), NO a 0.0.0.0; el healthcheck y los proxies del host no lo
+# alcanzan. Forzando HOSTNAME=0.0.0.0 escucha en todas las interfaces.
+ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
