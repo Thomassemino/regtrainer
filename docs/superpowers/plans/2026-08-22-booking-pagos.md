@@ -20,7 +20,7 @@
 - Control de concurrencia de cupos: transacción Prisma `Serializable` que cuenta `Reserva` en `CONFIRMADA` y decide `CONFIRMADA`/`LISTA_ESPERA` dentro de la misma transacción — nunca un `count` y un `create` como operaciones separadas (condición de carrera, spec §6).
 - Generación de clases: perezosa, sin cron ni scheduler externo — se dispara dentro de `GET /api/clases` si la ventana de 6 semanas no está cubierta (spec §9). Documentado como decisión, no como límite técnico.
 - Webhook de Mercado Pago: firma `x-signature`/`x-request-id` verificada con HMAC-SHA256 obligatoria, y el pago se reconfirma contra la API de Mercado Pago (nunca se confía en el body del webhook). Idempotente: una notificación repetida no debe crear un segundo `Pago` ni una segunda `Reserva`.
-- **Nota de riesgo transversal (spec §7, §13.1):** los nombres exactos de campos de Checkout Pro, Preapproval y el shape de la firma del webhook se escriben acá con el mejor entendimiento razonable de la API pública de Mercado Pago (SDK oficial `mercadopago` v2, patrón de firma documentado con template `id:{data.id};request-id:{x-request-id};ts:{ts};`), pero **hay que confirmarlos contra la documentación oficial vigente o el MCP de Mercado Pago antes de dar por buena cualquier task que integre con Mercado Pago (Tasks 8 y 9)** — no copiarlos de memoria a producción sin esa verificación.
+- **Nota de riesgo transversal (spec §7, §13.1) — resuelta tras verificación contra documentación oficial vigente (2026-08-22):** el shape de `Preference` (Checkout Pro), el shape de `PreApproval` (`reason`/`external_reference`/`payer_email`/`back_url`/`auto_recurring{frequency,frequency_type,transaction_amount,currency_id}`), el header `x-signature` (`ts=...,v1=...`) y el template de firma HMAC-SHA256 (`id:{data.id};request-id:{x-request-id};ts:{ts};`) están **confirmados** contra la documentación pública de Mercado Pago Developers y ejemplos del SDK oficial — no son una suposición, ya se verificaron. La única corrección real que salió de esa verificación: la notificación `subscription_authorized_payment` no trae un `Payment` ni el `preapproval_id` directo en `data.id` — trae el id de un recurso "Authorized Payment" (`GET /authorized_payments/:id`, sin clase dedicada en el SDK, se consulta con `fetch` directo) que contiene `preapproval_id` y un `payment` anidado. Esto ya está corregido en la Task 9 (Step 6). Sigue siendo buena práctica correr esta integración contra el sandbox de Mercado Pago antes de producción — la documentación pública puede quedar desactualizada respecto al comportamiento real de la API — pero ya no es una incógnita de diseño.
 - Todas las mutaciones de reserva/pago verifican que el `clienteId` derivado de `session.user.id` coincida con el dueño del recurso — un cliente no cancela la reserva de otro cambiando un id en la URL (spec §11).
 - El PDF de comprobante (`lib/pdf/render.ts`, `renderPdf(url): Promise<Buffer>`) puede ya existir si el plan de Panel + Rutinas (spec 3, en desarrollo en paralelo) corrió primero — **no duplicar el archivo**: si ya existe, verificar que la firma coincida y fusionar sin crear una segunda implementación de HTML→PDF.
 - Dinero: en la base de datos, `Servicio.precio` y `Pago.monto` se guardan en **centavos de ARS** (tal como especifica el spec §4 en el comentario del schema). La UI y `lib/data.ts` siguen trabajando en pesos enteros como hoy — la conversión centavos↔pesos vive en `lib/dinero.ts` y se aplica solo en el borde API↔UI y API↔Mercado Pago.
@@ -1554,7 +1554,7 @@ git commit -m "feat: cancelacion de reserva con ventana de 12hs y promocion de l
 - Consumes: `crearReservaConCupo` (Task 6), `prisma`, `logger` de Fundación.
 - Produces: `POST /api/pagos/clase` → `{ initPoint, pagoId }`, `POST /api/webhooks/mercadopago` — consumidos por `hooks/useBetoApp.ts` (Task 12).
 
-**Nota de riesgo (spec §7.1, §13.1 — leer antes de implementar):** el shape exacto de `Preference` (SDK `mercadopago` v2, clase `Preference`), el formato del header `x-signature` (`ts=...,v1=...`) y el template exacto de la firma (`id:{data.id};request-id:{x-request-id};ts:{ts};`) se escriben acá con el mejor entendimiento razonable de la documentación pública de Mercado Pago vigente al momento de escribir este plan. **Antes de dar por cerrada esta task, confirmar contra la documentación oficial o el MCP de Mercado Pago**: (a) si el parámetro del query string del webhook es `data.id` o `id` según la versión de notificación (`v1` vs `v2`), (b) si el campo se llama `external_reference` en la respuesta de `Preference`/`Payment` tal como se usa acá, (c) el algoritmo exacto de firma no cambió. Un error acá permite falsificar pagos aprobados — no es un detalle menor.
+**Confirmado contra documentación oficial vigente (2026-08-22)** — ya no es una suposición: el shape de `Preference` (SDK `mercadopago` v2, clase `Preference`), el header `x-signature` (`ts=...,v1=...`), el template de firma (`id:{data.id};request-id:{x-request-id};ts:{ts};`), y el parámetro `data.id` en el query string del webhook. Ejercitar igual el sandbox de Mercado Pago antes de producción, pero el diseño de esta task ya no depende de una verificación pendiente.
 
 - [ ] **Step 1: Instalar el SDK de Mercado Pago**
 
@@ -1977,7 +1977,7 @@ git commit -m "feat: checkout pro de mercado pago para clase suelta con webhook 
 - Consumes: `mpClient` (Task 8), `prisma`.
 - Produces: `POST /api/pagos/mensualidad` → `{ initPoint, suscripcionId }`, `POST /api/mensualidad/cancelar`, y una rama nueva del webhook — consumidos por `hooks/useBetoApp.ts` (Task 12).
 
-**Nota de riesgo (spec §7.2, §13.1):** el SDK `mercadopago` v2 expone `PreApproval` para suscripciones recurrentes. El shape exacto de su `body` (`reason`, `auto_recurring.frequency`, `auto_recurring.transaction_amount`, `back_url`, `payer_email`) y los `type` que llegan al webhook para preapproval (`subscription_preapproval`, `subscription_authorized_payment`) **hay que confirmarlos contra la documentación oficial o el MCP de Mercado Pago antes de cerrar esta task** — a diferencia de Checkout Pro (mucho más documentado y estable), la API de suscripciones tiene más variación histórica entre versiones.
+**Confirmado contra documentación oficial vigente (2026-08-22)**: el SDK `mercadopago` v2 expone `PreApproval` para suscripciones recurrentes, con el shape de `body` (`reason`, `external_reference`, `payer_email`, `back_url`, `auto_recurring{frequency, frequency_type, transaction_amount, currency_id}`) usado en este plan. Los `type`/`topic` de notificación (`subscription_preapproval`, `subscription_authorized_payment`, `subscription_preapproval_plan`) también están confirmados. La única corrección real que salió de la verificación está en el Step 6: `subscription_authorized_payment` no trae un `Payment` directo en `data.id`, ver la nota de ese step.
 
 - [ ] **Step 1: Escribir el test de integración de creación y cancelación de mensualidad**
 
@@ -2189,19 +2189,33 @@ Expected: PASS (2 tests)
 
 - [ ] **Step 6: Agregar al webhook la rama de cobro recurrente de mensualidad**
 
-Editar `app/api/webhooks/mercadopago/route.ts` (creado en Task 8) agregando, antes del `return Response.json({ ok: true })` final, la detección de notificaciones de tipo suscripción — Mercado Pago manda `type`/`topic` en el body o el query string además de `data.id`:
+**Corrección post-spec, confirmada contra la documentación oficial y ejemplos del SDK vigentes al momento de esta revisión** (ya no es una suposición a verificar — reemplaza la nota de riesgo original de este step): para el `topic`/`type` `subscription_authorized_payment`, el `data.id` de la notificación **no es un `Payment` ni el `preapproval_id`** — es el id de un recurso propio, "Authorized Payment" (`GET /authorized_payments/:id`), que contiene `preapproval_id` (la suscripción) y un objeto `payment` anidado con el pago real. El SDK oficial `mercadopago` (Node.js) no expone una clase dedicada para este recurso — se consulta con `fetch` directo a la REST API con el access token, no con el SDK.
+
+Editar `app/api/webhooks/mercadopago/route.ts` (creado en Task 8) agregando, antes del `return Response.json({ ok: true })` final, la detección de notificaciones de tipo suscripción — Mercado Pago manda `type`/`topic` en el query string además de `data.id`:
 
 ```typescript
 // app/api/webhooks/mercadopago/route.ts (fragmento a agregar — el resto del archivo de Task 8 no cambia)
 const topic = url.searchParams.get("type") ?? url.searchParams.get("topic");
 
 if (topic === "subscription_authorized_payment") {
-  // Cobro mensual recurrente aprobado por Mercado Pago — crea el Pago histórico de esa mensualidad.
-  const suscripcion = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: dataId } });
-  // Nota de riesgo: confirmar contra la doc oficial si `data.id` en este tipo de notificación
-  // es el id del preapproval o el id del pago puntual — de eso depende este `findFirst`.
+  const authorizedPaymentRes = await fetch(`https://api.mercadopago.com/authorized_payments/${dataId}`, {
+    headers: { Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}` },
+  });
+  if (!authorizedPaymentRes.ok) {
+    logger.error({ dataId, status: authorizedPaymentRes.status }, "no se pudo consultar el authorized_payment de mercado pago");
+    return Response.json({ ok: true });
+  }
+  const authorizedPayment: { preapproval_id: string; payment?: { id: number | string; status: string } } =
+    await authorizedPaymentRes.json();
+
+  if (!authorizedPayment.payment || authorizedPayment.payment.status !== "approved") {
+    return Response.json({ ok: true }); // cobro rechazado/pendiente — no se registra como Pago aprobado
+  }
+
+  const suscripcion = await prisma.suscripcion.findFirst({ where: { mpPreapprovalId: authorizedPayment.preapproval_id } });
   if (suscripcion) {
-    const yaRegistrado = await prisma.pago.findFirst({ where: { suscripcionId: suscripcion.id, mpPaymentId: dataId } });
+    const mpPaymentId = String(authorizedPayment.payment.id);
+    const yaRegistrado = await prisma.pago.findFirst({ where: { suscripcionId: suscripcion.id, mpPaymentId } });
     if (!yaRegistrado) {
       await prisma.pago.create({
         data: {
@@ -2210,7 +2224,7 @@ if (topic === "subscription_authorized_payment") {
           medio: "MERCADO_PAGO",
           monto: suscripcion.precio,
           estado: "APROBADO",
-          mpPaymentId: dataId,
+          mpPaymentId,
           suscripcionId: suscripcion.id,
         },
       });
@@ -2222,6 +2236,65 @@ if (topic === "subscription_authorized_payment") {
   }
   return Response.json({ ok: true });
 }
+```
+
+- [ ] **Step 6b: Test de integración de la rama de cobro recurrente**
+
+```typescript
+// tests/integration/webhook-mensualidad.test.ts
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createHmac } from "node:crypto";
+import { prisma } from "../../lib/db";
+
+const SECRET = "test-secret-webhook-mensualidad";
+
+beforeEach(async () => {
+  process.env.MERCADOPAGO_WEBHOOK_SECRET = SECRET;
+  await prisma.pago.deleteMany();
+  await prisma.suscripcion.deleteMany();
+  await prisma.cliente.deleteMany();
+  await prisma.user.deleteMany();
+  vi.restoreAllMocks();
+});
+
+function firmar(dataId: string, requestId: string, ts: string): string {
+  const template = `id:${dataId};request-id:${requestId};ts:${ts};`;
+  return createHmac("sha256", SECRET).update(template).digest("hex");
+}
+
+describe("POST /api/webhooks/mercadopago — subscription_authorized_payment", () => {
+  it("crea el Pago de mensualidad a partir del authorized_payment, no del data.id directo", async () => {
+    const user = await prisma.user.create({
+      data: { email: "webhook-mensual@example.com", passwordHash: "x", role: "CLIENTE", emailVerified: new Date() },
+    });
+    const cliente = await prisma.cliente.create({ data: { userId: user.id, nombre: "Webhook Mensual", iniciales: "WM", objetivo: "" } });
+    await prisma.suscripcion.create({
+      data: { clienteId: cliente.id, estado: "ACTIVA", precio: 15000000, fechaProximoCobro: new Date(), mpPreapprovalId: "preapproval-abc" },
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ preapproval_id: "preapproval-abc", payment: { id: 999888777, status: "approved" } }),
+    } as Response);
+
+    const ts = "1700000000";
+    const dataId = "authorized-payment-1";
+    const v1 = firmar(dataId, "req-1", ts);
+    const { POST } = await import("../../app/api/webhooks/mercadopago/route");
+    const res = await POST(
+      new Request(`http://localhost/api/webhooks/mercadopago?data.id=${dataId}&type=subscription_authorized_payment`, {
+        method: "POST",
+        headers: { "x-signature": `ts=${ts},v1=${v1}`, "x-request-id": "req-1" },
+        body: JSON.stringify({}),
+      })
+    );
+    expect(res.status).toBe(200);
+
+    const pago = await prisma.pago.findFirstOrThrow({ where: { clienteId: cliente.id } });
+    expect(pago.mpPaymentId).toBe("999888777"); // el id del pago real, no el id del authorized_payment
+    expect(pago.estado).toBe("APROBADO");
+  });
+});
 ```
 
 - [ ] **Step 7: Commit**

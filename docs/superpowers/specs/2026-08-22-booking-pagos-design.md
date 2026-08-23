@@ -172,7 +172,7 @@ Este mecanismo de generación **no** es parte del Panel+Rutinas (spec 3) ni tien
 
 ## 7. Pagos con Mercado Pago
 
-**Antes de escribir código de integración**: usar el MCP/plugin oficial de Mercado Pago (`mercadopago`, ver memoria de Fundación §Mercado Pago) para obtener los endpoints, payloads y firma de webhooks vigentes en el momento de implementar. No inventar de memoria el shape de la API de Checkout Pro/Preapproval ni la validación de la firma del webhook — es exactamente el tipo de detalle donde un error de implementación permite falsificar un pago.
+**Verificado (2026-08-22)** contra la documentación pública de Mercado Pago Developers y ejemplos del SDK oficial (no se tenía el MCP/plugin `mercadopago` habilitado en esta sesión) — ver §13.1 para el detalle y la única corrección real que salió de esa verificación. Quien implemente puede seguir el flujo de este spec con confianza; si tiene el MCP/plugin oficial disponible, usarlo igual para una segunda confirmación antes de producción no está de más, dado que la documentación pública puede desactualizarse.
 
 ### 7.1 Clase suelta (pago único)
 
@@ -236,6 +236,6 @@ Igual que el rate limiting de Fundación evitó Redis, este job evita un schedul
 
 ## 13. Riesgos y decisiones abiertas para quien implemente
 
-1. **API de Mercado Pago**: confirmar contra el MCP oficial (o la doc vigente) los nombres exactos de campos de Checkout Pro y Preapproval — este spec describe el flujo, no el payload exacto, porque eso cambia entre versiones de API y no debe copiarse de memoria.
+1. ~~API de Mercado Pago: confirmar nombres exactos de campos~~ — **resuelto (2026-08-22)**: verificado contra la documentación oficial de Mercado Pago Developers y ejemplos del SDK. El shape de `Preference`, `PreApproval` y la firma de webhook (`id:{data.id};request-id:{x-request-id};ts:{ts};`, HMAC-SHA256) coinciden con lo que ya especifica este spec. Único ajuste real encontrado: la notificación `subscription_authorized_payment` no trae el pago directamente en `data.id` — hay que consultar `GET /authorized_payments/:id` (sin clase dedicada en el SDK Node.js, se llama por `fetch` directo) para obtener `preapproval_id` y el `payment` real. Ya corregido en el plan de implementación, Task 9 Step 6.
 2. **Definición de "semana calendario" para el límite de personalizadas** (§8): se definió lunes a domingo; si el negocio real de Beto usa otro corte, es un cambio de una línea en la query, no de arquitectura.
 3. **Generación perezosa de clases (§9)**: aceptable a esta escala (un entrenador). Si en algún momento se nota latencia real en el primer request del día, migrar a cron dentro del contenedor sin cambiar el modelo de datos.
