@@ -3,6 +3,8 @@ import { prisma } from "../../../../lib/db";
 import { mpClient } from "../../../../lib/mercadopago/client";
 import { verificarFirmaWebhook } from "../../../../lib/mercadopago/firma";
 import { crearReservaConCupo } from "../../../../lib/reservas/crear";
+import { generarComprobantePago } from "../../../../lib/comprobantes/generar";
+import { sendComprobanteEmail } from "../../../../lib/email/templates";
 import { logger } from "../../../../lib/logger";
 
 export async function POST(req: Request) {
@@ -59,6 +61,13 @@ export async function POST(req: Request) {
         medio: null,
         pagoIdExistente: pago.id,
       });
+
+      const clienteConUser = await prisma.cliente.findUnique({ where: { id: pago.clienteId }, include: { user: true } });
+      if (clienteConUser) {
+        void generarComprobantePago(pago.id)
+          .then((pdf) => sendComprobanteEmail(clienteConUser.user.email, pdf, `comprobante-${pago.id}.pdf`))
+          .catch((e) => logger.error({ err: e, pagoId: pago.id }, "no se pudo generar/enviar el comprobante"));
+      }
     } catch (e) {
       logger.error({ err: e, pagoId: pago.id }, "pago aprobado pero no se pudo crear la reserva");
     }
