@@ -556,7 +556,7 @@ export function useBetoApp() {
     pagos: [
       { fecha: "01/08/2026", concepto: "Mensualidad", medio: "Visa •••3704 · 3 cuotas", importe: money(150000) },
       { fecha: "07/07/2026", concepto: "Clase personalizada", medio: "Mercado Pago", importe: money(22000) },
-      { fecha: "02/06/2026", concepto: "Bono 4 clases", medio: "Visa •••3704", importe: money(43000) },
+      { fecha: "02/06/2026", concepto: "Mensualidad", medio: "Visa •••3704", importe: money(150000) },
     ],
     notis: [
       { icon: "ph-calendar-check", titulo: "Recordatorio: Funcional hoy 19:00", texto: "Llegá 10 minutos antes para la entrada en calor.", cuando: "Hace 20 min", bg: "rgba(145,132,217,.10)" },
