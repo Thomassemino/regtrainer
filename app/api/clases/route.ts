@@ -5,6 +5,7 @@ import { logger } from "../../../lib/logger";
 
 const QuerySchema = z.object({
   servicioId: z.string().min(1).optional(),
+  slug: z.string().min(1).optional(),
   desde: z.string().datetime().optional(),
   hasta: z.string().datetime().optional(),
 });
@@ -23,6 +24,7 @@ export async function GET(req: Request) {
 
   const parsed = QuerySchema.safeParse({
     servicioId: url.searchParams.get("servicioId") ?? undefined,
+    slug: url.searchParams.get("slug") ?? undefined,
     desde: url.searchParams.get("desde") ?? undefined,
     hasta: url.searchParams.get("hasta") ?? undefined,
   });
@@ -34,12 +36,19 @@ export async function GET(req: Request) {
   const desde = parsed.data.desde ? new Date(parsed.data.desde) : ahora;
   const hasta = parsed.data.hasta ? new Date(parsed.data.hasta) : new Date(ahora.getTime() + SEIS_SEMANAS_MS);
 
+  // La UI trabaja con slugs; el backend filtra por id. Si llega slug lo resolvemos.
+  let servicioId = parsed.data.servicioId;
+  if (!servicioId && parsed.data.slug) {
+    const servicio = await prisma.servicio.findUnique({ where: { slug: parsed.data.slug } });
+    servicioId = servicio?.id;
+  }
+
   const clases = await prisma.clase.findMany({
     where: {
       cancelada: false,
       fecha: { gte: desde, lte: hasta },
       servicio: { activo: true },
-      ...(parsed.data.servicioId ? { servicioId: parsed.data.servicioId } : {}),
+      ...(servicioId ? { servicioId } : {}),
     },
     include: {
       servicio: true,

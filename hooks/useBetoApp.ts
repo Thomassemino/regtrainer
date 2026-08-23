@@ -25,8 +25,12 @@ const initialState: AppState = {
 };
 
 function diasData() {
-  const base = new Date(2026, 7, 17);
-  return Array.from({ length: 10 }, (_, i) => {
+  // El calendario del frontend parte de la fecha actual (no de una fecha mock fija):
+  // las Clase reales se generan desde "hoy" hacia adelante (spec §9), así que el
+  // día por defecto debe tener instancias reales para que los horarios se muestren.
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  return Array.from({ length: 14 }, (_, i) => {
     const d = new Date(base);
     d.setDate(base.getDate() + i);
     return { i, dow: DOW[d.getDay()], num: d.getDate(), libre: d.getDay() !== 0 };
@@ -67,9 +71,9 @@ export function useBetoApp() {
 
   useEffect(() => {
     if (state.screen !== "reservar") return;
-    const servicioId = state.servicio;
+    const servicioSlug = state.servicio;
     Promise.resolve().then(() => setCargandoClases(true));
-    fetch(`/api/clases?servicioId=${servicioId}`)
+    fetch(`/api/clases?slug=${encodeURIComponent(servicioSlug)}`)
       .then((r) => r.json())
       .then((data) => setClasesDisponibles(data.clases ?? []))
       .finally(() => setCargandoClases(false));

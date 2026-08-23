@@ -20,7 +20,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
               <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>2 · Día</div>
               <div style={{ fontSize: 12.5, opacity: .5 }}>Agosto 2026</div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(10,1fr)", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
               {vals.dias.map((d, i) => (
                 <button key={i} onClick={d.onClick} style={{ cursor: "pointer", padding: "12px 0", borderRadius: 12, border: `1px solid ${d.bd}`, background: d.bg, color: d.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <span style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", opacity: .65 }}>{d.dow}</span>

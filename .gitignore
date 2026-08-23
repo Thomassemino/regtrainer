@@ -48,3 +48,8 @@ next-env.d.ts
 .agents/
 .claude/
 .windsurf/
+
+# test artifacts
+test-results/
+playwright-report/
+.tmp*
