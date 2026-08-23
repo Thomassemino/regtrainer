@@ -103,7 +103,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
             <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis reservas</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {vals.reservas.map((r) => (
-                <div key={r.dow + r.num} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 18px", borderRadius: 14, background: "var(--color-surface)", opacity: r.op }}>
+                <div key={r.key ?? r.dow + r.num} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 18px", borderRadius: 14, background: "var(--color-surface)", opacity: r.op }}>
                   <div style={{ width: 54, textAlign: "center", flex: "none" }}>
                     <div style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", opacity: .5 }}>{r.dow}</div>
                     <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, lineHeight: 1.1 }}>{r.num}</div>

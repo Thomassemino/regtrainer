@@ -58,6 +58,24 @@ interface ClaseApi {
   lleno: boolean;
 }
 
+interface ReservaApi {
+  id: string;
+  claseId: string;
+  fecha: string;
+  servicio: string;
+  servicioSlug: string;
+  duracionMin: number;
+  estado: "CONFIRMADA" | "LISTA_ESPERA";
+  esCancelable: boolean;
+}
+
+function formatearRangoHora(fechaISO: string, duracionMin: number): string {
+  const inicio = new Date(fechaISO);
+  const fin = new Date(inicio.getTime() + duracionMin * 60 * 1000);
+  const hh = (d: Date) => d.toISOString().slice(11, 16);
+  return `${hh(inicio)} – ${hh(fin)}`;
+}
+
 export function useBetoApp() {
   const { data: session, status } = useSession();
   const params = useSearchParams();
@@ -68,6 +86,8 @@ export function useBetoApp() {
   const [clasesDisponibles, setClasesDisponibles] = useState<ClaseApi[]>([]);
   const [cargandoClases, setCargandoClases] = useState(false);
   const [suscripcionActiva, setSuscripcionActiva] = useState(false);
+  const [reservasReales, setReservasReales] = useState<ReservaApi[]>([]);
+  const [cargandoReservas, setCargandoReservas] = useState(false);
 
   useEffect(() => {
     if (state.screen !== "reservar") return;
@@ -98,6 +118,23 @@ export function useBetoApp() {
       .then((data) => setSuscripcionActiva(!!data.activa))
       .catch(() => setSuscripcionActiva(false));
   }, [esCliente]);
+
+  const cargarReservasReales = useCallback(() => {
+    if (!esCliente) {
+      Promise.resolve().then(() => setReservasReales([]));
+      return Promise.resolve();
+    }
+    Promise.resolve().then(() => setCargandoReservas(true));
+    return fetch("/api/reservas")
+      .then((r) => r.json())
+      .then((d) => setReservasReales(d.reservas ?? []))
+      .catch(() => setReservasReales([]))
+      .finally(() => setCargandoReservas(false));
+  }, [esCliente]);
+
+  useEffect(() => {
+    void cargarReservasReales();
+  }, [state.screen, esCliente, cargarReservasReales]);
 
   const set = useCallback((updater: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => {
     setState((s) => ({ ...s, ...(typeof updater === "function" ? updater(s) : updater) }));
@@ -177,6 +214,17 @@ export function useBetoApp() {
     await nextAuthSignOut({ redirect: false });
     go("landing");
     showToast("Sesión cerrada");
+  };
+
+  const cancelarReserva = async (reservaId: string) => {
+    const res = await fetch(`/api/reservas/${reservaId}/cancelar`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      showToast("Reserva cancelada · podés reprogramar");
+      void cargarReservasReales();
+    } else {
+      showToast(data.error ?? "No se pudo cancelar la reserva");
+    }
   };
 
   const goCoach = () => {
@@ -462,11 +510,27 @@ export function useBetoApp() {
       const on = st.cuentaTab === t.id;
       return { label: t.label, icon: t.icon, bg: on ? "rgba(145,132,217,.14)" : "transparent", fg: on ? "#d2cefd" : "rgba(233,233,237,.75)", onClick: goTab(t.id as AppState["cuentaTab"]) };
     }),
-    reservas: [
-      { dow: "MAR", num: "18", clase: "Funcional / HIIT", hora: "19:00 – 19:50", lugar: "Estudio Palermo", estado: "Confirmada", tagClass: "tag-accent", accionesShow: "flex", op: 1 },
-      { dow: "JUE", num: "20", clase: "Outdoor / Running", hora: "07:00 – 08:00", lugar: "Bosques de Palermo", estado: "Confirmada", tagClass: "tag-accent", accionesShow: "flex", op: 1 },
-      { dow: "SÁB", num: "22", clase: "Personalizado 1 a 1", hora: "10:00 – 11:00", lugar: "Estudio Palermo", estado: "Lista de espera", tagClass: "tag-outline", accionesShow: "flex", op: 1 },
-    ].map((r) => ({ ...r, onCancel: () => showToast("Reserva cancelada · podés reprogramar"), onMove: () => go("reservar") })),
+    reservas: reservasReales.map((r) => {
+      const fecha = new Date(r.fecha);
+      const num = String(fecha.getDate());
+      const estadoTexto = r.estado === "CONFIRMADA" ? "Confirmada" : "Lista de espera";
+      return {
+        key: r.id,
+        dow: DOW[fecha.getDay()],
+        num,
+        clase: r.servicio,
+        hora: formatearRangoHora(r.fecha, r.duracionMin),
+        lugar: "Estudio Palermo",
+        estado: estadoTexto,
+        tagClass: r.estado === "CONFIRMADA" ? "tag-accent" : "tag-outline",
+        accionesShow: r.esCancelable ? "flex" : "none",
+        op: r.estado === "CONFIRMADA" ? 1 : 0.8,
+        onCancel: () => cancelarReserva(r.id),
+        onMove: () => go("reservar"),
+      };
+    }),
+    cargandoReservas,
+    cancelarReserva,
     historial: [
       { fecha: "14/08/2026", clase: "Musculación", estado: "Asististe", pago: money(15000) },
       { fecha: "12/08/2026", clase: "Funcional / HIIT", estado: "Asististe", pago: money(12000) },

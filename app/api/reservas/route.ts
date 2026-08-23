@@ -2,11 +2,45 @@ import { z } from "zod";
 import { auth } from "../../../lib/auth";
 import { prisma } from "../../../lib/db";
 import { crearReservaConCupo, RequierePagoError } from "../../../lib/reservas/crear";
+import { puedeCancelarSinCargo } from "../../../lib/reservas/cancelar";
 
 const Schema = z.object({
   claseId: z.string().min(1),
   medio: z.enum(["EFECTIVO"]).optional(),
 });
+
+export async function GET(_req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return Response.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  // Hallazgo 1.4: el clienteId DERIVA de la sesión, nunca de un parámetro, para que
+  // cada cliente vea solo sus propias reservas (mismo aislamiento que otros endpoints).
+  const cliente = await prisma.cliente.findUnique({ where: { userId: session.user.id } });
+  if (!cliente) {
+    return Response.json({ error: "Cuenta sin perfil de cliente" }, { status: 400 });
+  }
+
+  const reservas = await prisma.reserva.findMany({
+    where: { clienteId: cliente.id, estado: { in: ["CONFIRMADA", "LISTA_ESPERA"] } },
+    include: { clase: { include: { servicio: true } } },
+    orderBy: { clase: { fecha: "asc" } },
+  });
+
+  return Response.json({
+    reservas: reservas.map((r) => ({
+      id: r.id,
+      claseId: r.claseId,
+      fecha: r.clase.fecha.toISOString(),
+      servicio: r.clase.servicio.nombre,
+      servicioSlug: r.clase.servicio.slug,
+      duracionMin: r.clase.servicio.duracionMin,
+      estado: r.estado,
+      esCancelable: r.estado === "CONFIRMADA" && puedeCancelarSinCargo(r.clase.fecha),
+    })),
+  });
+}
 
 export async function POST(req: Request) {
   const session = await auth();
