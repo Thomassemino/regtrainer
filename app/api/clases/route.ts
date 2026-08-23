@@ -11,6 +11,7 @@ const QuerySchema = z.object({
 });
 
 const SEIS_SEMANAS_MS = 6 * 7 * 24 * 60 * 60 * 1000;
+const RANGO_MAX_MS = 12 * 7 * 24 * 60 * 60 * 1000;
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -35,6 +36,11 @@ export async function GET(req: Request) {
   const ahora = new Date();
   const desde = parsed.data.desde ? new Date(parsed.data.desde) : ahora;
   const hasta = parsed.data.hasta ? new Date(parsed.data.hasta) : new Date(ahora.getTime() + SEIS_SEMANAS_MS);
+
+  // Tope de rango (deuda 2.2): nadie puede pedir una ventana arbitrariamente grande.
+  if (hasta.getTime() - desde.getTime() > RANGO_MAX_MS) {
+    return Response.json({ error: "Rango de fechas demasiado amplio (máximo 12 semanas)" }, { status: 400 });
+  }
 
   // La UI trabaja con slugs; el backend filtra por id. Si llega slug lo resolvemos.
   let servicioId = parsed.data.servicioId;

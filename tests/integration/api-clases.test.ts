@@ -66,4 +66,12 @@ describe("GET /api/clases", () => {
     const body = await res.json();
     expect(body.clases).toEqual([]);
   });
+
+  it("rechaza con 400 un rango de fechas mayor a 12 semanas (deuda 2.2)", async () => {
+    const desde = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    const hasta = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+    const { GET } = await import("../../app/api/clases/route");
+    const res = await GET(new Request(`http://localhost/api/clases?desde=${desde}&hasta=${hasta}`));
+    expect(res.status).toBe(400);
+  });
 });
