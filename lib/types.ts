@@ -2,7 +2,7 @@ export type Screen =
   | "landing" | "reservar" | "checkout" | "confirm" | "login" | "cuenta" | "coach"
   | "clientes" | "ficha" | "builder" | "asignar" | "pdf";
 export type CuentaTab = "reservas" | "rutina" | "paquetes" | "notis" | "datos";
-export type Metodo = "bono" | "tarjeta" | "mp" | "efectivo";
+export type Metodo = "tarjeta" | "mp" | "efectivo";
 export type LoginRol = "cliente" | "admin";
 
 export type TipoBloque = "TRADICIONAL" | "SECUENCIA" | "SUPERSERIE" | "EMOM" | "POR_TIEMPO";
@@ -67,10 +67,10 @@ export interface AppState {
   servicio: string;
   dia: number;
   hora: string | null;
+  claseSeleccionadaId: string | null;
   recurrente: boolean;
   metodo: Metodo;
   cuota: number;
-  creditos: number;
   packSel: string | null;
   toast: string | null;
   loginRolUI: LoginRol;

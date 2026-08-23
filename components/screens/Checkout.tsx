@@ -38,9 +38,9 @@ export default function Checkout({ vals }: { vals: BetoVals }) {
               </div>
             </div>
           )}
-          <label style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, opacity: .75, cursor: "pointer" }}>
-            <input type="checkbox" style={{ width: 16, height: 16, accentColor: "var(--color-accent)" }} /> Necesito factura A · cargar datos de CUIT
-          </label>
+          <p style={{ fontSize: 12.5, opacity: .55 }}>
+            Vas a recibir un comprobante simple por email — no es una factura fiscal (sin AFIP).
+          </p>
         </div>
         <div style={{ position: "sticky", top: 86, padding: 20, borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>Resumen</div>

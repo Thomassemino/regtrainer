@@ -4,7 +4,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
       <h1 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: 0 }}>Reservá tu turno</h1>
-      <p style={{ fontSize: 14, opacity: .6, margin: "8px 0 28px" }}>Elegí la clase, el día y el horario. Podés pagar con crédito de un bono, tarjeta, Mercado Pago o en el estudio.</p>
+      <p style={{ fontSize: 14, opacity: .6, margin: "8px 0 28px" }}>Elegí la clase, el día y el horario. Podés pagar con tarjeta, Mercado Pago o en el estudio.</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 348px", gap: 28, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
           <div>
@@ -43,7 +43,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
           </div>
           <label style={{ display: "flex", gap: 11, alignItems: "center", padding: 15, borderRadius: 12, background: "var(--color-surface)", cursor: "pointer", maxWidth: 520 }}>
             <input type="checkbox" checked={vals.recurrente} onChange={vals.toggleRecurrente} style={{ width: 17, height: 17, accentColor: "var(--color-accent)" }} />
-            <span style={{ flex: 1, fontSize: 13.5, lineHeight: 1.4 }}>Repetir todas las semanas<br /><span style={{ fontSize: 12, opacity: .5 }}>Reserva el mismo día y horario durante 4 semanas y descuenta de tu bono</span></span>
+            <span style={{ flex: 1, fontSize: 13.5, lineHeight: 1.4 }}>Repetir todas las semanas<br /><span style={{ fontSize: 12, opacity: .5 }}>Reserva el mismo día y horario durante las próximas 4 semanas</span></span>
           </label>
         </div>
 
@@ -57,7 +57,9 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
             <span style={{ fontSize: 13.5, opacity: .6 }}>A pagar</span>
             <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, letterSpacing: "-0.03em" }}>{vals.resumenPrecio}</span>
           </div>
-          <div style={{ fontSize: 12, opacity: .55, lineHeight: 1.45 }}>Te quedan {vals.creditos} clases del Bono 8 (vence el 30/09).</div>
+          <div style={{ fontSize: 12, opacity: .55, lineHeight: 1.45 }}>
+            {vals.cargandoHorarios ? "Buscando horarios disponibles…" : ""}
+          </div>
           <button onClick={vals.irCheckout} className="btn btn-primary btn-block" style={{ height: 44, fontSize: 15 }}>Continuar al pago</button>
           <div style={{ display: "flex", gap: 7, alignItems: "center", justifyContent: "center", fontSize: 11.5, opacity: .5 }}><i className="ph ph-lock-simple" />Cancelación sin costo hasta 6 h antes</div>
         </div>

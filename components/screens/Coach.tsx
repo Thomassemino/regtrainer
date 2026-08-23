@@ -86,10 +86,19 @@ export default function Coach({ vals }: { vals: BetoVals }) {
           </div>
           <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "30px 0 12px" }}>Últimos pagos</h3>
           <table className="table">
-            <thead><tr><th>Cliente</th><th>Concepto</th><th style={{ textAlign: "right" }}>Importe</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>Concepto</th><th style={{ textAlign: "right" }}>Importe</th><th /></tr></thead>
             <tbody>
               {vals.pagosCoach.map((p) => (
-                <tr key={p.cliente}><td>{p.cliente}</td><td>{p.concepto}</td><td style={{ textAlign: "right" }}>{p.importe}</td></tr>
+                <tr key={p.cliente}>
+                  <td>{p.cliente}</td>
+                  <td>{p.concepto}</td>
+                  <td style={{ textAlign: "right" }}>{p.importe}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {p.pendienteEfectivo && (
+                      <button className="btn btn-secondary" onClick={() => vals.marcarPagoRecibido(p.pagoId!)}>Marcar recibido</button>
+                    )}
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>

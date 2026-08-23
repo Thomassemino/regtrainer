@@ -57,23 +57,7 @@ export interface Pack {
 
 export const PACKS: Pack[] = [
   { id: "suelta", nombre: "Clase suelta", desc: "Probá sin compromiso, se paga al reservar.", precio: 12000, unit: "por clase", badge: "", feats: ["Sin vencimiento", "Cualquier disciplina"], cta: "Reservar" },
-  { id: "bono4", nombre: "Bono 4 clases", desc: "Una clase por semana durante un mes.", precio: 43000, unit: "$10.750 por clase", badge: "", feats: ["Vence en 90 días", "Reprogramás sin costo"], cta: "Comprar bono" },
-  { id: "bono8", nombre: "Bono 8 clases", desc: "El más elegido: dos clases por semana.", precio: 80000, unit: "$10.000 por clase", badge: "Más elegido", feats: ["Vence en 90 días", "Prioridad de cupo", "Transferible"], cta: "Comprar bono" },
-  { id: "mensual", nombre: "Mensualidad", desc: "Todas las grupales + 1 personalizada por semana.", precio: 150000, unit: "por mes, se renueva solo", badge: "Suscripción", feats: ["Clases ilimitadas", "Cupo garantizado", "Plan nutricional", "Cancelás cuando quieras"], cta: "Suscribirme" },
-];
-
-export interface Hora {
-  hora: string;
-  cupos: string;
-  lleno: boolean;
-}
-
-export const HORAS: Hora[] = [
-  { hora: "07:00", cupos: "2 lugares", lleno: false }, { hora: "08:00", cupos: "Completo", lleno: true },
-  { hora: "09:00", cupos: "4 lugares", lleno: false }, { hora: "10:00", cupos: "1 lugar", lleno: false },
-  { hora: "12:00", cupos: "Completo", lleno: true }, { hora: "17:00", cupos: "5 lugares", lleno: false },
-  { hora: "18:00", cupos: "3 lugares", lleno: false }, { hora: "19:00", cupos: "2 lugares", lleno: false },
-  { hora: "20:00", cupos: "6 lugares", lleno: false }, { hora: "21:00", cupos: "4 lugares", lleno: false },
+  { id: "mensual", nombre: "Mensualidad", desc: "Todas las grupales + 1 personalizada por semana.", precio: 150000, unit: "por mes, se renueva solo", badge: "Suscripción", feats: ["Clases ilimitadas", "Cupo garantizado", "Cancelás cuando quieras"], cta: "Suscribirme" },
 ];
 
 export const DOW = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];

@@ -85,7 +85,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
       <div style={{ position: "sticky", top: 86, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
           <ImageSlot alt="Camila Ferreyra" shape="circle" style={{ width: 44, height: 44, flex: "none" }} initials="CF" />
-          <div><div style={{ fontSize: 14.5, fontWeight: 500 }}>Camila Ferreyra</div><div style={{ fontSize: 11.5, opacity: .5 }}>Bono 8 · {vals.creditos} clases</div></div>
+          <div><div style={{ fontSize: 14.5, fontWeight: 500 }}>Camila Ferreyra</div><div style={{ fontSize: 11.5, opacity: .5 }}>Cuenta de cliente</div></div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {vals.cuentaTabs.map((t) => (
@@ -227,13 +227,12 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
             <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis paquetes</h2>
             <div style={{ padding: 20, borderRadius: 14, background: "linear-gradient(120deg,var(--color-accent-900),var(--color-surface))", maxWidth: 520 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "-0.02em" }}>Bono 8 clases</div>
-                <span className="tag tag-outline">Activo</span>
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "-0.02em" }}>Mensualidad</div>
+                <span className="tag tag-outline">Ver precios</span>
               </div>
-              <div style={{ height: 8, borderRadius: 99, background: "var(--color-neutral-900)", overflow: "hidden", margin: "14px 0 8px" }}><div style={{ height: "100%", width: vals.creditosPct, background: "var(--color-accent)" }} /></div>
-              <div style={{ fontSize: 13, opacity: .7 }}>{vals.creditos} de 8 clases disponibles · vence el 30/09/2026</div>
+              <div style={{ fontSize: 13, opacity: .7, marginTop: 10 }}>Todas las grupales + 1 personalizada por semana.</div>
               <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
-                <button onClick={vals.goPrecios} className="btn btn-primary">Renovar con 10% off</button>
+                <button onClick={vals.goPrecios} className="btn btn-primary">Ver precios</button>
                 <button onClick={vals.goReservar} className="btn btn-secondary">Usar una clase</button>
               </div>
             </div>

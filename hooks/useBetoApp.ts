@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react";
-import { AC, ACD, DIV, DOW, HORAS, PACKS, PH, SERVICIOS, SUR, money } from "@/lib/data";
+import { AC, ACD, DIV, DOW, PACKS, PH, SERVICIOS, SUR, money } from "@/lib/data";
 import type { AppState, Screen } from "@/lib/types";
 
 const initialState: AppState = {
   screen: "landing", cuentaTab: "reservas", prev: [],
   servicio: "funcional", dia: 2, hora: null, recurrente: false,
-  metodo: "bono", cuota: 1, creditos: 6, packSel: null,
+  metodo: "tarjeta", cuota: 1, packSel: null, claseSeleccionadaId: null,
   toast: null,
   loginRolUI: "cliente",
 
@@ -43,6 +43,17 @@ const sel = (on: boolean) => ({
   fg: on ? "#d2cefd" : "#e9e9ed",
 });
 
+interface ClaseApi {
+  id: string;
+  servicioId: string;
+  servicioSlug: string;
+  fecha: string;
+  cupoMax: number;
+  cuposOcupados: number;
+  cuposDisponibles: number;
+  lleno: boolean;
+}
+
 export function useBetoApp() {
   const { data: session, status } = useSession();
   const params = useSearchParams();
@@ -50,6 +61,19 @@ export function useBetoApp() {
   const [loginError, setLoginError] = useState("");
   const prevAuth = useRef<string | null>(null);
   const transitionNavigated = useRef(false);
+  const [clasesDisponibles, setClasesDisponibles] = useState<ClaseApi[]>([]);
+  const [cargandoClases, setCargandoClases] = useState(false);
+  const [suscripcionActiva, setSuscripcionActiva] = useState(false);
+
+  useEffect(() => {
+    if (state.screen !== "reservar") return;
+    const servicioId = state.servicio;
+    Promise.resolve().then(() => setCargandoClases(true));
+    fetch(`/api/clases?servicioId=${servicioId}`)
+      .then((r) => r.json())
+      .then((data) => setClasesDisponibles(data.clases ?? []))
+      .finally(() => setCargandoClases(false));
+  }, [state.screen, state.servicio]);
 
   useEffect(() => {
     if (status === "authenticated" && !session?.user) {
@@ -58,6 +82,18 @@ export function useBetoApp() {
   }, [status, session]);
 
   const auth = session?.user?.role ?? null;
+  const esCliente = auth === "CLIENTE";
+
+  useEffect(() => {
+    if (!esCliente) {
+      Promise.resolve().then(() => setSuscripcionActiva(false));
+      return;
+    }
+    fetch("/api/cuenta/mensualidad")
+      .then((r) => (r.ok ? r.json() : { activa: false }))
+      .then((data) => setSuscripcionActiva(!!data.activa))
+      .catch(() => setSuscripcionActiva(false));
+  }, [esCliente]);
 
   const set = useCallback((updater: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => {
     setState((s) => ({ ...s, ...(typeof updater === "function" ? updater(s) : updater) }));
@@ -113,9 +149,8 @@ export function useBetoApp() {
   const dias = diasData();
   const diaSel = dias[st.dia];
   const packSel = PACKS.find((p) => p.id === st.packSel) ?? null;
-  const total = packSel ? packSel.precio : st.metodo === "bono" ? 0 : s.precio;
+  const total = packSel ? packSel.precio : s.precio;
 
-  const esCliente = auth === "CLIENTE";
   const esAdmin = auth === "ADMIN";
 
   const goTab = (t: AppState["cuentaTab"]) => () => set({ cuentaTab: t, screen: "cuenta" });
@@ -182,11 +217,11 @@ export function useBetoApp() {
     logout,
     loginTitulo: st.loginRolUI === "admin" ? "Panel del entrenador" : "Entrá a tu cuenta",
     loginBajada: st.loginRolUI === "admin"
-      ? "Acceso exclusivo de Beto: agenda del día, clientes, bonos por vencer, cobros y asignación de rutinas."
-      : "Tus reservas, tu rutina, tus bonos y tus pagos en un solo lugar. Si ya compraste una clase, ya tenés cuenta.",
+      ? "Acceso exclusivo de Beto: agenda del día, clientes, cobros y asignación de rutinas."
+      : "Tus reservas, tu rutina, tu mensualidad y tus pagos en un solo lugar. Si ya compraste una clase, ya tenés cuenta.",
     loginBullets: (st.loginRolUI === "admin"
-      ? [{ icon: "ph-calendar-check", t: "Agenda del día con cupos y lista de espera" }, { icon: "ph-users-three", t: "Ficha de cada cliente, rutinas y asistencias" }, { icon: "ph-chart-line-up", t: "Ingresos, ocupación y bonos por vencer" }]
-      : [{ icon: "ph-ticket", t: "Reservás y usás los créditos de tu bono" }, { icon: "ph-barbell", t: "Ves la rutina que te asignó Beto" }, { icon: "ph-receipt", t: "Historial de pagos y comprobantes" }]),
+      ? [{ icon: "ph-calendar-check", t: "Agenda del día con cupos y lista de espera" }, { icon: "ph-users-three", t: "Ficha de cada cliente, rutinas y asistencias" }, { icon: "ph-chart-line-up", t: "Ingresos y ocupación" }]
+      : [{ icon: "ph-ticket", t: "Reservás y pagás tu clase o garantizás tu mensualidad" }, { icon: "ph-barbell", t: "Ves la rutina que te asignó Beto" }, { icon: "ph-receipt", t: "Historial de pagos y comprobantes" }]),
     rolTabs: [
       { id: "cliente", label: "Soy cliente", icon: "ph-user" },
       { id: "admin", label: "Soy el entrenador", icon: "ph-shield-check" },
@@ -246,7 +281,7 @@ export function useBetoApp() {
     bandas: [
       { icon: "ph-calendar-check", t: "Reservás online", d: "Elegís día y horario, con cupos en tiempo real." },
       { icon: "ph-credit-card", t: "Pagás en la web", d: "Tarjeta en cuotas, Mercado Pago o efectivo en el estudio." },
-      { icon: "ph-ticket", t: "Bonos y mensualidad", d: "Comprás varias clases y las usás cuando quieras." },
+      { icon: "ph-ticket", t: "Mensualidad o clase suelta", d: "Comprás el plan que mejor acompañe tu rutina." },
       { icon: "ph-users-three", t: "Grupos de hasta 8", d: "Corrección técnica personalizada en cada clase." },
     ],
     servicios: SERVICIOS.map((x) => ({
@@ -257,12 +292,12 @@ export function useBetoApp() {
     pasos: [
       { n: "01", t: "Elegí la clase", d: "Personalizada, grupal, outdoor u online." },
       { n: "02", t: "Reservá el turno", d: "Día y horario con cupo confirmado al instante." },
-      { n: "03", t: "Pagá como quieras", d: "Crédito de bono, tarjeta, Mercado Pago o efectivo." },
+      { n: "03", t: "Pagá como quieras", d: "Tarjeta, Mercado Pago o efectivo en el estudio." },
       { n: "04", t: "Entrená y seguí tu plan", d: "Tu rutina y tu progreso quedan en tu cuenta." },
     ],
     packs: PACKS.map((p) => ({
       ...p, precioFmt: money(p.precio), feats: p.feats.map((f) => ({ t: f })), badgeShow: p.badge ? "inline-flex" : "none",
-      bd: p.id === "bono8" ? AC : DIV, bg: p.id === "bono8" ? "linear-gradient(150deg," + ACD + "," + SUR + ")" : "transparent",
+      bd: p.id === "mensual" ? AC : DIV, bg: p.id === "mensual" ? "linear-gradient(150deg," + ACD + "," + SUR + ")" : "transparent",
       onClick: () => { set({ packSel: p.id, metodo: "tarjeta" }); go(p.id === "suelta" ? "reservar" : "checkout"); },
     })),
     coachStats: [{ v: "12", k: "Años entrenando" }, { v: "340+", k: "Alumnos" }, { v: "4,9", k: "Reseñas" }],
@@ -286,27 +321,52 @@ export function useBetoApp() {
       dot: d.libre ? (st.dia === d.i ? AC : "rgba(145,132,217,.5)") : "transparent",
       onClick: () => set({ dia: d.i, hora: null }),
     })),
-    horarios: HORAS.map((h) => {
-      const on = st.hora === h.hora;
-      const base = h.lleno ? { bg: "transparent", bd: "rgba(233,233,237,.07)", fg: "rgba(233,233,237,.3)" } : sel(on);
-      return { hora: h.hora, cupos: h.cupos, ...base, cursor: h.lleno ? "not-allowed" : "pointer", onClick: h.lleno ? undefined : () => set({ hora: h.hora }) };
-    }),
+    horarios: clasesDisponibles
+      .filter((c) => {
+        const fecha = new Date(c.fecha);
+        return fecha.getDate() === diaSel.num;
+      })
+      .map((c) => {
+        const horaStr = new Date(c.fecha).toISOString().slice(11, 16);
+        const on = st.claseSeleccionadaId === c.id;
+        const base = c.lleno ? { bg: "transparent", bd: "rgba(233,233,237,.07)", fg: "rgba(233,233,237,.3)" } : sel(on);
+        return {
+          hora: horaStr,
+          cupos: c.lleno ? "Completo" : `${c.cuposDisponibles} lugares`,
+          ...base,
+          cursor: c.lleno ? "not-allowed" : "pointer",
+          onClick: c.lleno ? undefined : () => set({ hora: horaStr, claseSeleccionadaId: c.id }),
+        };
+      }),
+    cargandoHorarios: cargandoClases,
     recurrente: st.recurrente, toggleRecurrente: () => set((p) => ({ recurrente: !p.recurrente })),
     resumenItems: [
       { k: "Clase", v: s.nombre }, { k: "Día", v: diaSel.dow + " " + diaSel.num + " de agosto" },
       { k: "Horario", v: st.hora || "Elegí un horario" }, { k: "Lugar", v: "Gorriti 4200, Palermo" },
       { k: "Repetir semanal", v: st.recurrente ? "Sí, 4 semanas" : "No" },
     ],
-    resumenPrecio: st.creditos > 0 ? "1 crédito" : money(s.precio),
-    creditos: st.creditos, creditosPct: (st.creditos / 8) * 100 + "%",
-    irCheckout: () => { if (!st.hora) { showToast("Elegí un horario disponible"); return; } set({ packSel: null }); go("checkout"); },
+    resumenPrecio: (() => {
+      const clase = clasesDisponibles.find((c) => c.id === st.claseSeleccionadaId);
+      if (!clase) return "—";
+      const servicioSeleccionado = SERVICIOS.find((x) => x.id === st.servicio);
+      if (!servicioSeleccionado || servicioSeleccionado.precio === 0) return "Sin cargo";
+      if (suscripcionActiva && servicioSeleccionado.id !== "personal") return "Cubierto por tu mensualidad";
+      return money(servicioSeleccionado.precio);
+    })(),
+    irCheckout: () => {
+      if (!st.claseSeleccionadaId) {
+        showToast("Elegí un horario disponible");
+        return;
+      }
+      set({ packSel: null });
+      go("checkout");
+    },
 
     metodos: [
-      { id: "bono", label: "Crédito del bono", sub: st.creditos + " clases disponibles", icon: "ph-ticket" },
-      { id: "tarjeta", label: "Tarjeta de crédito", sub: "Visa •••• 3704 · hasta 6 cuotas", icon: "ph-credit-card" },
+      { id: "tarjeta", label: "Tarjeta de crédito o débito", sub: "Vía Mercado Pago, hasta 6 cuotas", icon: "ph-credit-card" },
       { id: "mp", label: "Mercado Pago", sub: "Dinero en cuenta o transferencia", icon: "ph-wallet" },
       { id: "efectivo", label: "Efectivo en el estudio", sub: "Reservás ahora y pagás al llegar", icon: "ph-money" },
-    ].filter((m) => !(m.id === "bono" && packSel)).map((m) => {
+    ].map((m) => {
       const on = st.metodo === m.id;
       return {
         ...m, bd: on ? AC : DIV, bg: on ? "rgba(145,132,217,.10)" : "transparent",
@@ -319,15 +379,74 @@ export function useBetoApp() {
     checkoutItems: packSel
       ? [{ k: "Producto", v: packSel.nombre }, { k: "Detalle", v: packSel.desc }, { k: "Vigencia", v: packSel.id === "mensual" ? "Renovación mensual" : "90 días" }, { k: "Cuotas", v: st.metodo === "tarjeta" ? (st.cuota === 1 ? "1 pago" : st.cuota + " cuotas") : "—" }]
       : [{ k: "Clase", v: s.nombre }, { k: "Día y hora", v: diaSel.dow + " " + diaSel.num + "/08 · " + (st.hora || "—") }, { k: "Lugar", v: "Gorriti 4200, Palermo" }, { k: "Repetir semanal", v: st.recurrente ? "Sí, 4 semanas" : "No" }],
-    totalFmt: !packSel && st.metodo === "bono" ? "1 crédito" : money(total),
-    ctaPago: packSel ? "Pagar " + money(packSel.precio) : st.metodo === "bono" ? "Confirmar con 1 crédito" : "Pagar " + money(s.precio),
-    pagar: () => {
-      set((p) => ({ creditos: packSel ? (packSel.id === "bono8" ? 8 : packSel.id === "bono4" ? p.creditos + 4 : p.creditos) : p.metodo === "bono" ? Math.max(0, p.creditos - 1) : p.creditos }));
+    totalFmt: money(total),
+    ctaPago: packSel ? "Pagar " + money(packSel.precio) : "Pagar " + money(s.precio),
+    pagar: async () => {
+      if (packSel?.id === "mensual") {
+        const res = await fetch("/api/pagos/mensualidad", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error ?? "No pudimos iniciar el pago");
+          return;
+        }
+        window.location.href = data.initPoint;
+        return;
+      }
+
+      if (!st.claseSeleccionadaId) {
+        showToast("Elegí una clase para reservar");
+        return;
+      }
+
+      if (st.metodo === "efectivo") {
+        const res = await fetch("/api/reservas", {
+          method: "POST",
+          body: JSON.stringify({ claseId: st.claseSeleccionadaId, medio: "EFECTIVO" }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error ?? "No pudimos reservar la clase");
+          return;
+        }
+        go("confirm");
+        return;
+      }
+
+      const intento = await fetch("/api/reservas", {
+        method: "POST",
+        body: JSON.stringify({ claseId: st.claseSeleccionadaId }),
+      });
+      if (intento.status === 409) {
+        const pagoRes = await fetch("/api/pagos/clase", {
+          method: "POST",
+          body: JSON.stringify({ claseId: st.claseSeleccionadaId }),
+        });
+        const pagoData = await pagoRes.json();
+        if (!pagoRes.ok) {
+          showToast(pagoData.error ?? "No pudimos iniciar el pago");
+          return;
+        }
+        window.location.href = pagoData.initPoint;
+        return;
+      }
+      const data = await intento.json();
+      if (!intento.ok) {
+        showToast(data.error ?? "No pudimos reservar la clase");
+        return;
+      }
       go("confirm");
+    },
+    marcarPagoRecibido: async (pagoId: string) => {
+      const res = await fetch(`/api/coach/pagos/${pagoId}`, { method: "PATCH" });
+      if (res.ok) {
+        showToast("Pago marcado como recibido");
+      } else {
+        showToast("No se pudo marcar el pago");
+      }
     },
     confirmItems: packSel
       ? [{ k: "Compra", v: packSel.nombre }, { k: "Total", v: money(packSel.precio) }, { k: "Comprobante", v: "Enviado a camila.f@gmail.com" }, { k: "Disponible", v: "Ya podés reservar" }]
-      : [{ k: "Clase", v: s.nombre }, { k: "Cuándo", v: diaSel.dow + " " + diaSel.num + "/08 · " + (st.hora || "19:00") }, { k: "Lugar", v: "Gorriti 4200, Palermo" }, { k: "Pagado con", v: st.metodo === "bono" ? "1 crédito del bono" : money(s.precio) }],
+      : [{ k: "Clase", v: s.nombre }, { k: "Cuándo", v: diaSel.dow + " " + diaSel.num + "/08 · " + (st.hora || "19:00") }, { k: "Lugar", v: "Gorriti 4200, Palermo" }, { k: "Pagado con", v: money(s.precio) }],
 
     cuentaTabs: [
       { id: "reservas", label: "Mis reservas", icon: "ph-calendar-check" },
@@ -343,23 +462,23 @@ export function useBetoApp() {
       { dow: "MAR", num: "18", clase: "Funcional / HIIT", hora: "19:00 – 19:50", lugar: "Estudio Palermo", estado: "Confirmada", tagClass: "tag-accent", accionesShow: "flex", op: 1 },
       { dow: "JUE", num: "20", clase: "Outdoor / Running", hora: "07:00 – 08:00", lugar: "Bosques de Palermo", estado: "Confirmada", tagClass: "tag-accent", accionesShow: "flex", op: 1 },
       { dow: "SÁB", num: "22", clase: "Personalizado 1 a 1", hora: "10:00 – 11:00", lugar: "Estudio Palermo", estado: "Lista de espera", tagClass: "tag-outline", accionesShow: "flex", op: 1 },
-    ].map((r) => ({ ...r, onCancel: () => showToast("Reserva cancelada · crédito devuelto a tu bono"), onMove: () => go("reservar") })),
+    ].map((r) => ({ ...r, onCancel: () => showToast("Reserva cancelada · podés reprogramar"), onMove: () => go("reservar") })),
     historial: [
-      { fecha: "14/08/2026", clase: "Musculación", estado: "Asististe", pago: "1 crédito" },
-      { fecha: "12/08/2026", clase: "Funcional / HIIT", estado: "Asististe", pago: "1 crédito" },
+      { fecha: "14/08/2026", clase: "Musculación", estado: "Asististe", pago: money(15000) },
+      { fecha: "12/08/2026", clase: "Funcional / HIIT", estado: "Asististe", pago: money(12000) },
       { fecha: "10/08/2026", clase: "Outdoor / Running", estado: "Cancelada a tiempo", pago: "Devuelto" },
       { fecha: "07/08/2026", clase: "Personalizado 1 a 1", estado: "Asististe", pago: money(22000) },
     ],
     pagos: [
-      { fecha: "01/08/2026", concepto: "Bono 8 clases", medio: "Visa •••3704 · 3 cuotas", importe: money(80000) },
+      { fecha: "01/08/2026", concepto: "Mensualidad", medio: "Visa •••3704 · 3 cuotas", importe: money(150000) },
       { fecha: "07/07/2026", concepto: "Clase personalizada", medio: "Mercado Pago", importe: money(22000) },
       { fecha: "02/06/2026", concepto: "Bono 4 clases", medio: "Visa •••3704", importe: money(43000) },
     ],
     notis: [
       { icon: "ph-calendar-check", titulo: "Recordatorio: Funcional hoy 19:00", texto: "Llegá 10 minutos antes para la entrada en calor.", cuando: "Hace 20 min", bg: "rgba(145,132,217,.10)" },
-      { icon: "ph-ticket", titulo: "Te quedan 6 clases del bono", texto: "Vence el 30/09. Renovalo antes con 10% de descuento.", cuando: "Ayer", bg: SUR },
+      { icon: "ph-ticket", titulo: "Tu mensualidad está al día", texto: "Clases grupales garantizadas + 1 personalizada por semana.", cuando: "Hoy", bg: SUR },
       { icon: "ph-barbell", titulo: "Beto actualizó tu rutina", texto: "Bloque 2: subimos la carga en sentadilla y sumamos movilidad de cadera.", cuando: "Hace 2 días", bg: SUR },
-      { icon: "ph-receipt", titulo: "Pago acreditado", texto: "Bono 8 clases · " + money(80000) + " · Visa •••3704", cuando: "Hace 5 días", bg: SUR },
+      { icon: "ph-receipt", titulo: "Pago acreditado", texto: "Mensualidad · " + money(150000) + " · Visa •••3704", cuando: "Hace 5 días", bg: SUR },
     ],
 
     coachKpis: [
@@ -381,17 +500,17 @@ export function useBetoApp() {
       { dia: "Vie", pct: "65%", h: "65%", color: "#5d5294" }, { dia: "Sáb", pct: "48%", h: "48%", color: "#423a6a" },
     ],
     clientes: [
-      { ini: "CF", nombre: "Camila Ferreyra", motivo: "Bono vence en 6 días", cta: "Avisar" },
+      { ini: "CF", nombre: "Camila Ferreyra", motivo: "Mensualidad vence en 6 días", cta: "Avisar" },
       { ini: "MD", nombre: "Martín Duarte", motivo: "Rutina sin actualizar hace 5 semanas", cta: "Asignar" },
       { ini: "SL", nombre: "Sofía Lema", motivo: "Faltó a las últimas 2 clases", cta: "Escribir" },
       { ini: "LG", nombre: "Lucía Giménez", motivo: "Evaluación inicial sin plan cargado", cta: "Cargar" },
     ],
-    pagosCoach: [
-      { cliente: "Camila F.", concepto: "Bono 8 clases", importe: money(80000) },
+    pagosCoach: ([
+      { cliente: "Camila F.", concepto: "Mensualidad", importe: money(150000) },
       { cliente: "Nicolás P.", concepto: "Mensualidad", importe: money(150000) },
-      { cliente: "Julieta R.", concepto: "Bono 4 clases", importe: money(43000) },
+      { cliente: "Julieta R.", concepto: "Clase suelta", importe: money(12000) },
       { cliente: "Martín D.", concepto: "Personalizada suelta", importe: money(22000) },
-    ],
+    ] as { cliente: string; concepto: string; importe: string; pagoId?: string; pendienteEfectivo?: boolean }[]),
 
     toast: st.toast || "", toastShow: st.toast ? "block" : "none",
     loading: status === "loading",
