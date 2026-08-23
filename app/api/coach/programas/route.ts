@@ -4,7 +4,9 @@ import { requireAdmin } from "../../../../lib/coach/guards";
 
 const CrearProgramaSchema = z.object({
   nombre: z.string().min(2),
-  objetivo: z.string().min(2),
+  // Un cliente recién registrado puede no tener objetivo todavía (objetivo: "").
+  // Un programa se puede armar igualmente; se documenta como vacío en el builder.
+  objetivo: z.string().max(300),
   frecuencia: z.string().min(2),
   semanas: z.number().int().min(2).max(8).default(4),
   clienteId: z.string().min(1).optional(),
