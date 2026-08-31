@@ -8,6 +8,7 @@ export async function GET() {
   const clientes = await prisma.cliente.findMany({
     orderBy: { nombre: "asc" },
     include: {
+      user: { select: { image: true } },
       asignaciones: {
         orderBy: { asignadoEn: "desc" },
         take: 1,
@@ -22,6 +23,7 @@ export async function GET() {
       id: c.id,
       nombre: c.nombre,
       iniciales: c.iniciales,
+      imagen: c.user.image,
       objetivo: c.objetivo,
       plan: c.plan,
       programaActual: vigente?.programa.nombre ?? "Sin asignar",

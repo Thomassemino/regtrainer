@@ -4,6 +4,19 @@ import { useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import type { ProgramaApi, BloqueApi, FocoBloque, TipoBloque } from "@/lib/types";
 import { pctParaSemana, repsParaSemana } from "@/lib/rutinas/progresion";
+import NumberStepper from "@/components/NumberStepper";
+
+function descansoASegundos(descanso: string): number {
+  const [m, s] = descanso.split(":").map((n) => Number(n) || 0);
+  return m * 60 + s;
+}
+
+function segundosADescanso(totalSegundos: number): string {
+  const t = Math.max(0, totalSegundos);
+  const m = Math.floor(t / 60);
+  const s = t % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 const TIPOS: { valor: TipoBloque; label: string }[] = [
   { valor: "TRADICIONAL", label: "Tradicional" },
@@ -38,6 +51,8 @@ export default function EditorEjercicio({
   const [detalle, setDetalle] = useState(bloqueExistente?.detalle ?? "");
   const [meta, setMeta] = useState(bloqueExistente?.meta ?? "");
   const [seriesBase, setSeriesBase] = useState(bloqueExistente?.sobrecarga[0]?.series ?? 4);
+  const [repsBase, setRepsBase] = useState(bloqueExistente?.sobrecarga[0]?.reps ?? repsParaSemana(1));
+  const [cargaBase, setCargaBase] = useState(bloqueExistente?.sobrecarga[0]?.pct ?? pctParaSemana(1));
   const [descansoBase, setDescansoBase] = useState(bloqueExistente?.sobrecarga[0]?.descanso ?? "02:00");
   const [sobrecarga, setSobrecarga] = useState(bloqueExistente?.sobrecarga ?? []);
   const [guardando, setGuardando] = useState(false);
@@ -51,18 +66,26 @@ export default function EditorEjercicio({
   const guardar = async () => {
     setGuardando(true);
     try {
+      let res: Response;
       if (bloqueExistente) {
-        await fetch(`/api/coach/bloques/${bloqueExistente.id}`, {
+        res = await fetch(`/api/coach/bloques/${bloqueExistente.id}`, {
           method: "PATCH",
           body: JSON.stringify({ tipo, foco, titulo, detalle, meta: meta || null, sobrecarga }),
         });
       } else if (vals.editorDiaId) {
-        await fetch(`/api/coach/dias/${vals.editorDiaId}/bloques`, {
+        res = await fetch(`/api/coach/dias/${vals.editorDiaId}/bloques`, {
           method: "POST",
-          body: JSON.stringify({ tipo, foco, titulo, detalle, meta: meta || undefined, seriesBase, descansoBase }),
+          body: JSON.stringify({ tipo, foco, titulo, detalle, meta: meta || undefined, seriesBase, repsBase, cargaBase, descansoBase }),
         });
+      } else {
+        return;
       }
-      vals.showToast("Bloque guardado con su sobrecarga");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        vals.showToast(data?.error ?? "No se pudo guardar el ejercicio");
+        return;
+      }
+      vals.showToast(bloqueExistente ? "Cambios guardados" : "Ejercicio agregado al día");
       vals.cerrarEditor();
       onGuardado();
     } finally {
@@ -72,19 +95,21 @@ export default function EditorEjercicio({
 
   const borrar = async () => {
     if (!bloqueExistente) return;
-    await fetch(`/api/coach/bloques/${bloqueExistente.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/coach/bloques/${bloqueExistente.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      vals.showToast("No se pudo borrar el ejercicio");
+      return;
+    }
+    vals.showToast("Ejercicio borrado");
     vals.cerrarEditor();
     onGuardado();
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "grid", placeItems: "center", padding: 24, background: "rgba(22,24,38,.72)", backdropFilter: "blur(4px)" }}>
-      <div style={{ width: "min(860px,100%)", maxHeight: "88vh", overflow: "auto", borderRadius: 16, background: "var(--color-surface-sunken)", boxShadow: "0 0 0 1px var(--color-neutral-800), 0 16px 40px rgba(0,0,0,.65)", padding: "20px 22px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "grid", placeItems: "center", padding: 24, background: "rgba(0,0,0,.78)", backdropFilter: "blur(4px)" }}>
+      <div style={{ width: "min(860px,100%)", maxHeight: "88vh", overflow: "auto", borderRadius: 14, background: "var(--color-surface-sunken)", boxShadow: "0 0 0 1px rgba(244,244,245,.13), 0 16px 40px rgba(0,0,0,.75)", padding: "20px 22px" }}>
+        <div style={{ marginBottom: 12 }}>
           <span className="tag tag-outline">Por series</span>
-          <button className="btn btn-secondary" disabled title="Próximamente">
-            <i className="ph ph-book-open" /> Guía de ejecución
-          </button>
         </div>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
@@ -101,8 +126,8 @@ export default function EditorEjercicio({
                 style={{
                   padding: "7px 14px", borderRadius: 99, fontSize: 13, cursor: "pointer",
                   border: `1px solid ${foco === f.valor ? "var(--color-accent)" : "var(--color-divider)"}`,
-                  background: foco === f.valor ? "rgba(145,132,217,.16)" : "transparent",
-                  color: foco === f.valor ? "var(--color-accent-300)" : "var(--color-text)",
+                  background: foco === f.valor ? "rgba(232,40,40,.16)" : "transparent",
+                  color: foco === f.valor ? "#FF7A7A" : "var(--color-text)",
                 }}
               >
                 {f.label}
@@ -134,34 +159,30 @@ export default function EditorEjercicio({
         />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
-          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(233,233,237,.14)", background: "var(--color-surface)", textAlign: "center" }}>
+          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(244,244,245,.14)", background: "var(--color-surface)", textAlign: "center" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.5 }}><i className="ph ph-stack" /> Series</div>
-            <input
-              type="number" min={1}
-              value={seriesBase}
-              onChange={(e) => setSeriesBase(Number(e.target.value))}
-              disabled={!!bloqueExistente}
-              style={{ width: "100%", textAlign: "center", fontSize: 22, fontWeight: 500, background: "transparent", border: 0, color: "var(--color-text)" }}
-            />
+            <NumberStepper value={seriesBase} onChange={setSeriesBase} min={1} disabled={!!bloqueExistente} />
             <div style={{ fontSize: 10.5, opacity: 0.4 }}>por ejercicio</div>
           </div>
-          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(233,233,237,.14)", background: "var(--color-surface)", textAlign: "center" }}>
+          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(244,244,245,.14)", background: "var(--color-surface)", textAlign: "center" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.5 }}><i className="ph ph-repeat" /> Repeticiones</div>
-            <div style={{ fontSize: 22, fontWeight: 500 }}>{repsParaSemana(1)}</div>
+            <NumberStepper value={repsBase} onChange={setRepsBase} min={1} disabled={!!bloqueExistente} />
             <div style={{ fontSize: 10.5, opacity: 0.4 }}>por serie</div>
           </div>
-          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(233,233,237,.14)", background: "var(--color-surface)", textAlign: "center" }}>
+          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(244,244,245,.14)", background: "var(--color-surface)", textAlign: "center" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.5 }}><i className="ph ph-trend-up" /> Carga</div>
-            <div style={{ fontSize: 22, fontWeight: 500 }}>{pctParaSemana(1)}</div>
+            <NumberStepper value={cargaBase} onChange={setCargaBase} step={5} min={0} max={100} disabled={!!bloqueExistente} format={(v) => `${v}%`} />
             <div style={{ fontSize: 10.5, opacity: 0.4 }}>%1RM · progresiva</div>
           </div>
-          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(233,233,237,.14)", background: "var(--color-surface)", textAlign: "center" }}>
+          <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(244,244,245,.14)", background: "var(--color-surface)", textAlign: "center" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.5 }}><i className="ph ph-timer" /> Descanso</div>
-            <input
-              value={descansoBase}
-              onChange={(e) => setDescansoBase(e.target.value)}
+            <NumberStepper
+              value={descansoASegundos(descansoBase)}
+              onChange={(segundos) => setDescansoBase(segundosADescanso(segundos))}
+              step={15}
+              min={0}
               disabled={!!bloqueExistente}
-              style={{ width: "100%", textAlign: "center", fontSize: 22, fontWeight: 500, background: "transparent", border: 0, color: "var(--color-text)" }}
+              format={segundosADescanso}
             />
             <div style={{ fontSize: 10.5, opacity: 0.4 }}>entre series</div>
           </div>

@@ -10,6 +10,8 @@ const CrearBloqueSchema = z.object({
   detalle: z.string().min(2),
   meta: z.string().optional(),
   seriesBase: z.number().int().min(1),
+  repsBase: z.number().int().min(1).optional(),
+  cargaBase: z.number().int().min(0).max(100).optional(),
   descansoBase: z.string().min(1),
 });
 
@@ -30,7 +32,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ diaId: 
   if (!parsed.success) {
     return Response.json({ error: "Datos inválidos" }, { status: 400 });
   }
-  const { seriesBase, descansoBase, ...datos } = parsed.data;
+  const { seriesBase, repsBase, cargaBase, descansoBase, ...datos } = parsed.data;
 
   const bloque = await prisma.bloque.create({
     data: {
@@ -38,7 +40,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ diaId: 
       diaId,
       orden: dia._count.bloques,
       sobrecarga: {
-        create: construirTablaSobrecarga(dia.programa.semanas, { series: seriesBase, descanso: descansoBase }),
+        create: construirTablaSobrecarga(dia.programa.semanas, {
+          series: seriesBase,
+          reps: repsBase,
+          pct: cargaBase,
+          descanso: descansoBase,
+        }),
       },
     },
     include: { sobrecarga: { orderBy: { semana: "asc" } } },

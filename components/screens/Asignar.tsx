@@ -37,10 +37,12 @@ export default function Asignar({ vals }: { vals: BetoVals }) {
         method: "POST",
         body: JSON.stringify({ clienteIds: seleccionados.map((c) => c.id), mensajePersonalizado: mensaje, temaPdf: vals.temaPdfSel }),
       });
+      const data = await res.json().catch(() => null);
       if (res.ok) {
-        const data = await res.json();
         vals.showToast(`Programa asignado a ${data.asignados} clientes`);
         vals.goPdf();
+      } else {
+        vals.showToast(data?.error ?? "No se pudo asignar el programa");
       }
     } finally {
       setEnviando(false);
@@ -73,9 +75,9 @@ export default function Asignar({ vals }: { vals: BetoVals }) {
                   style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)", border: `1px solid ${on ? "var(--color-accent)" : "transparent"}` }}
                 >
                   <span style={{ width: 22, height: 22, flex: "none", borderRadius: 6, border: "1.5px solid var(--color-divider)", background: on ? "var(--color-accent)" : "transparent", display: "grid", placeItems: "center" }}>
-                    {on && <i className="ph ph-check" style={{ fontSize: 13, color: "#161826" }} />}
+                    {on && <i className="ph ph-check" style={{ fontSize: 13, color: "#000" }} />}
                   </span>
-                  <ImageSlot alt={c.nombre} shape="circle" style={{ width: 32, height: 32, flex: "none" }} initials={c.iniciales} />
+                  <ImageSlot alt={c.nombre} shape="circle" style={{ width: 32, height: 32, flex: "none" }} src={c.imagen ?? undefined} initials={c.iniciales} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500 }}>{c.nombre}</div>
                     <div style={{ fontSize: 12, opacity: 0.55 }}>{c.objetivo}</div>
@@ -93,7 +95,7 @@ export default function Asignar({ vals }: { vals: BetoVals }) {
             <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ opacity: 0.55 }}>Programa</span><span>{programa?.nombre ?? "…"}</span></div>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ opacity: 0.55 }}>Duración</span><span>{programa?.semanas ?? "—"} semanas</span></div>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ opacity: 0.55 }}>Asignados</span><span>{seleccionados.length} clientes</span></div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ opacity: 0.55 }}>Marca del PDF</span><span>Beto Training</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ opacity: 0.55 }}>Marca del PDF</span><span>RegTrainer</span></div>
           </div>
           <div className="field">
             <label>Mensaje para tus clientes</label>

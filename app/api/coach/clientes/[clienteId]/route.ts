@@ -11,6 +11,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ cliente
   const cliente = await prisma.cliente.findUnique({
     where: { id: clienteId },
     include: {
+      user: { select: { image: true } },
       asignaciones: {
         orderBy: { asignadoEn: "desc" },
         include: { programa: true },

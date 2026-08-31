@@ -32,7 +32,7 @@ describe("reset de password", () => {
     expect(ok).toBe(true);
 
     const updated = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    expect(await verifyPassword(updated.passwordHash, "NuevaPassword2")).toBe(true);
+    expect(await verifyPassword(updated.passwordHash!, "NuevaPassword2")).toBe(true);
 
     const sessions = await prisma.session.findMany({ where: { userId } });
     expect(sessions).toHaveLength(0);

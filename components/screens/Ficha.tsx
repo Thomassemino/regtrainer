@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import ImageSlot from "@/components/ImageSlot";
+import Loader from "@/components/Loader";
 
 interface AsignacionFicha {
   id: string;
@@ -14,6 +15,7 @@ interface ClienteFicha {
   id: string;
   nombre: string;
   iniciales: string;
+  user: { image: string | null };
   objetivo: string;
   plan: string;
   frecuencia: string | null;
@@ -47,6 +49,11 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
   }, [vals.fichaId]);
 
   const armarRutina = async () => {
+    const borrador = cliente?.asignaciones.find((a) => a.programa.estado === "BORRADOR");
+    if (borrador) {
+      vals.goBuilder(borrador.programa.id);
+      return;
+    }
     setCreando(true);
     try {
       const res = await fetch("/api/coach/programas", {
@@ -60,7 +67,11 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
         }),
       });
       const data = await res.json();
-      if (res.ok) vals.goBuilder(data.programa.id);
+      if (res.ok) {
+        vals.goBuilder(data.programa.id);
+      } else {
+        vals.showToast(data?.error ?? "No se pudo crear el programa");
+      }
     } finally {
       setCreando(false);
     }
@@ -76,7 +87,7 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
   };
 
   if (!cliente) {
-    return <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 32px 72px", fontSize: 13.5, opacity: 0.55 }}>Cargando ficha…</div>;
+    return <Loader label="Cargando ficha…" />;
   }
 
   return (
@@ -89,7 +100,7 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
         <div style={{ position: "sticky", top: 86, display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ padding: 20, borderRadius: 14, background: "var(--color-surface)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <ImageSlot alt={cliente.nombre} shape="circle" style={{ width: 52, height: 52, flex: "none" }} initials={cliente.iniciales} />
+              <ImageSlot alt={cliente.nombre} shape="circle" style={{ width: 52, height: 52, flex: "none" }} src={cliente.user.image ?? undefined} initials={cliente.iniciales} />
               <div>
                 <div style={{ fontSize: 17, fontWeight: 500, letterSpacing: "-0.02em" }}>{cliente.nombre}</div>
                 <div style={{ fontSize: 12, opacity: 0.5 }}>{cliente.plan} · desde {new Date(cliente.createdAt).toLocaleDateString("es-AR", { month: "2-digit", year: "numeric" })}</div>
@@ -134,7 +145,7 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
                   <div style={{ width: 1, alignSelf: "stretch", background: "var(--color-divider)" }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 500 }}>{a.programa.nombre}</div>
-                    <div style={{ fontSize: 12.5, opacity: 0.55 }}>{a.programa.semanas} semanas · {a.programa.frecuencia} · objetivo {a.programa.objetivo}</div>
+                    <div style={{ fontSize: 12.5, opacity: 0.55 }}>{a.programa.semanas} semanas · {a.programa.frecuencia}{a.programa.objetivo ? ` · objetivo ${a.programa.objetivo}` : ""}</div>
                   </div>
                   <span className={`tag ${estado.clase}`}>{estado.texto}</span>
                   <button onClick={() => vals.goBuilder(a.programa.id)} className="btn btn-secondary">Editar</button>

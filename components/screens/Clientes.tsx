@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import type { ClienteFilaApi } from "@/lib/types";
 import ImageSlot from "@/components/ImageSlot";
+import Loader from "@/components/Loader";
 
 export default function Clientes({ vals }: { vals: BetoVals }) {
   const [clientes, setClientes] = useState<ClienteFilaApi[]>([]);
@@ -42,7 +43,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
 
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
         <div>
-          <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Modo entrenador</div>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Modo entrenador</div>
           <h1 style={{ fontSize: 38, letterSpacing: "-0.03em", margin: "8px 0 0" }}>Clientes</h1>
           <p style={{ fontSize: 13.5, opacity: 0.6, margin: "6px 0 0" }}>
             Entrá a la ficha de cada uno para armarle la rutina, asignarla y exportarla.
@@ -68,7 +69,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
       </div>
 
       {cargando ? (
-        <div style={{ fontSize: 13.5, opacity: 0.55 }}>Cargando clientes…</div>
+        <Loader label="Cargando clientes…" />
       ) : (
         <table className="table">
           <thead>
@@ -81,7 +82,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
               <tr key={c.id}>
                 <td>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <ImageSlot alt={c.nombre} shape="circle" style={{ width: 32, height: 32, flex: "none" }} initials={c.iniciales} />
+                    <ImageSlot alt={c.nombre} shape="circle" style={{ width: 32, height: 32, flex: "none" }} src={c.imagen ?? undefined} initials={c.iniciales} />
                     <div>
                       <div style={{ fontSize: 13.5, fontWeight: 500 }}>{c.nombre}</div>
                       <div style={{ fontSize: 12, opacity: 0.5 }}>{c.objetivo}</div>

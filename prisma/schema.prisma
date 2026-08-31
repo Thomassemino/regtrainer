@@ -27,8 +27,9 @@ enum AuditAction {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String
+  passwordHash  String?
   role          Role      @default(CLIENTE)
+  image         String?
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -222,6 +223,8 @@ model Servicio {
   slug        String   @unique
   nombre      String
   tag         String
+  descripcion String   @default("")
+  imagenUrl   String   @default("")
   duracionMin Int
   precio      Int
   cupoMax     Int
@@ -229,6 +232,19 @@ model Servicio {
 
   horarios    HorarioRecurrente[]
   clases      Clase[]
+}
+
+model PlanPrecio {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nombre      String
+  descripcion String
+  precio      Int
+  unidad      String
+  badge       String   @default("")
+  feats       String[]
+  orden       Int      @default(0)
+  updatedAt   DateTime @updatedAt
 }
 
 model HorarioRecurrente {

@@ -5,7 +5,23 @@ import { logAudit } from "./audit";
 import { isRateLimited } from "./rate-limit";
 import { normalizeEmail } from "./email";
 
-const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
+export const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
+
+export async function crearSesionDb(params: {
+  userId: string;
+  ip: string;
+  userAgent?: string;
+}): Promise<{ id: string }> {
+  return prisma.session.create({
+    data: {
+      sessionToken: crypto.randomUUID(),
+      userId: params.userId,
+      ip: params.ip,
+      userAgent: params.userAgent,
+      expires: new Date(Date.now() + SESSION_DURATION_MS),
+    },
+  });
+}
 
 let dummyHashPromise: Promise<string> | null = null;
 
@@ -36,7 +52,7 @@ export async function credentialsLogin(params: {
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.emailVerified) {
+  if (!user || !user.emailVerified || !user.passwordHash) {
     await logAudit({ email, action: "LOGIN_FAILED", ip, userAgent });
     await verifyPassword(await getDummyHash(), params.password);
     return null;
@@ -48,15 +64,7 @@ export async function credentialsLogin(params: {
     return null;
   }
 
-  const dbSession = await prisma.session.create({
-    data: {
-      sessionToken: crypto.randomUUID(),
-      userId: user.id,
-      ip,
-      userAgent,
-      expires: new Date(Date.now() + SESSION_DURATION_MS),
-    },
-  });
+  const dbSession = await crearSesionDb({ userId: user.id, ip, userAgent });
 
   await logAudit({ email, userId: user.id, action: "LOGIN_SUCCESS", ip, userAgent });
 

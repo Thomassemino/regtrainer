@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   await logAudit({ email, action: "PASSWORD_RESET_SOLICITADO", ip });
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (user) {
+  if (user && user.passwordHash) {
     const { raw, hash } = generateToken();
     await prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash: hash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },

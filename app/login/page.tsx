@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import GoogleButton from "@/components/GoogleButton";
 
 function LoginInner() {
   const router = useRouter();
@@ -92,6 +93,7 @@ function LoginInner() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.5, opacity: .45 }}><span style={{ flex: 1, height: 1, background: "var(--color-divider)" }} />o<span style={{ flex: 1, height: 1, background: "var(--color-divider)" }} /></div>
+            <GoogleButton />
             <div style={{ fontSize: 12.5, opacity: .65, textAlign: "center" }}>
               ¿No tenés cuenta? <a href="/registro">Registrate</a>
             </div>

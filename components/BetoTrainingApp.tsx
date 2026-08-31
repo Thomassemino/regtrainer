@@ -15,6 +15,7 @@ import Ficha from "@/components/screens/Ficha";
 import Builder from "@/components/screens/Builder";
 import Asignar from "@/components/screens/Asignar";
 import ExportPdf from "@/components/screens/ExportPdf";
+import ServiciosAdmin from "@/components/screens/ServiciosAdmin";
 
 export default function BetoTrainingApp() {
   const vals = useBetoApp();
@@ -36,6 +37,7 @@ export default function BetoTrainingApp() {
       {vals.isBuilder && esAdmin && <Builder vals={vals} />}
       {vals.isAsignar && esAdmin && <Asignar vals={vals} />}
       {vals.isPdf && esAdmin && <ExportPdf vals={vals} />}
+      {vals.isServiciosAdmin && esAdmin && <ServiciosAdmin vals={vals} />}
 
       <ToastBar vals={vals} />
     </div>

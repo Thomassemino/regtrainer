@@ -1,7 +1,10 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import { headers } from "next/headers";
 import { prisma } from "./db";
 import { credentialsLogin } from "./auth/authorize";
+import { googleLogin } from "./auth/google";
 import { getClientIpFrom } from "./auth/ip";
 import type { Session } from "next-auth";
 
@@ -25,9 +28,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return credentialsLogin({ email, password, ip, userAgent });
       },
     }),
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
+      if (account?.provider === "google") {
+        const email = (profile as { email?: string } | undefined)?.email;
+        if (!email) return token;
+        const emailVerificado = (profile as { email_verified?: boolean } | undefined)?.email_verified ?? false;
+        const nombre = (profile as { name?: string } | undefined)?.name;
+        const imagen = (profile as { picture?: string } | undefined)?.picture;
+        const h = await headers();
+        const result = await googleLogin({
+          email,
+          nombre,
+          imagen,
+          emailVerificado,
+          ip: getClientIpFrom(h),
+          userAgent: h.get("user-agent") ?? undefined,
+        });
+        if (!result) return token;
+        token.sub = result.id;
+        token.email = result.email;
+        token.role = result.role;
+        token.image = result.image;
+        token.sessionId = result.sessionId;
+        return token;
+      }
       if (user) {
         token.email = (user as { email?: string }).email;
         token.role = (user as { role: "CLIENTE" | "ADMIN" }).role;
@@ -48,12 +78,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       const dbUser = await prisma.user.findUnique({
         where: { id: token.sub },
-        select: { role: true },
+        select: { role: true, image: true },
       });
       if (!dbUser || !session.user) {
         return revoked;
       }
       session.user.role = dbUser.role;
+      session.user.image = dbUser.image;
       await prisma.session.updateMany({
         where: { id: dbSession.id, expires: { gt: new Date() } },
         data: { expires: new Date(Date.now() + SESSION_DURATION_MS) },

@@ -11,6 +11,7 @@ import type { ProgramaApi } from "@/lib/types";
 import { ORDEN_SEMANA } from "@/lib/rutinas/dias";
 import ColumnaDia from "@/components/coach/ColumnaDia";
 import EditorEjercicio from "@/components/screens/EditorEjercicio";
+import Loader from "@/components/Loader";
 
 export default function Builder({ vals }: { vals: BetoVals }) {
   const [programa, setPrograma] = useState<ProgramaApi | null>(null);
@@ -129,14 +130,14 @@ export default function Builder({ vals }: { vals: BetoVals }) {
   };
 
   if (!programa) {
-    return <div style={{ padding: "40px 32px", fontSize: 13.5, opacity: 0.55 }}>Cargando constructor…</div>;
+    return <Loader label="Cargando constructor…" />;
   }
 
   return (
     <div>
-      <div style={{ position: "sticky", top: 57, zIndex: 20, background: "rgba(22,24,38,.92)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--color-divider)" }}>
+      <div style={{ position: "sticky", top: 57, zIndex: 20, background: "rgba(0,0,0,.93)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--color-divider)" }}>
         <div style={{ maxWidth: 1560, margin: "0 auto", padding: "11px 24px", display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={vals.goClientes} className="btn btn-ghost"><i className="ph ph-arrow-left" /></button>
+          <button onClick={vals.back} className="btn btn-ghost"><i className="ph ph-arrow-left" /></button>
           <div style={{ fontSize: 15, fontWeight: 500, whiteSpace: "nowrap" }}>{programa.nombre}</div>
           <span className="tag tag-outline">{programa.estado === "ASIGNADO" ? "Asignado" : "Sin asignar"}</span>
           <div style={{ flex: 1 }} />
@@ -147,15 +148,15 @@ export default function Builder({ vals }: { vals: BetoVals }) {
                 onClick={() => vals.setSemanaSel(semana)}
                 style={{
                   width: 28, height: 24, borderRadius: 6, fontSize: 13, border: 0, cursor: "pointer",
-                  background: vals.semanaSel === semana ? "rgba(145,132,217,.18)" : "transparent",
-                  color: vals.semanaSel === semana ? "var(--color-accent-300)" : "rgba(233,233,237,.6)",
+                  background: vals.semanaSel === semana ? "rgba(232,40,40,.20)" : "transparent",
+                  color: vals.semanaSel === semana ? "#FF7A7A" : "rgba(244,244,245,.6)",
                 }}
               >
                 {semana}
               </button>
             ))}
             {programa.semanas < 8 && (
-              <button onClick={agregarSemana} style={{ width: 28, height: 24, borderRadius: 6, fontSize: 13, border: 0, cursor: "pointer", background: "transparent", color: "rgba(233,233,237,.6)" }}>
+              <button onClick={agregarSemana} style={{ width: 28, height: 24, borderRadius: 6, fontSize: 13, border: 0, cursor: "pointer", background: "transparent", color: "rgba(244,244,245,.6)" }}>
                 +
               </button>
             )}

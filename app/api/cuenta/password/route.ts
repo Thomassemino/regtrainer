@@ -38,6 +38,10 @@ export async function PATCH(req: Request) {
     return Response.json({ error: "Demasiados intentos, esperá unos minutos" }, { status: 429 });
   }
 
+  if (!user.passwordHash) {
+    return Response.json({ error: "Esta cuenta inicia sesión con Google y no tiene contraseña" }, { status: 409 });
+  }
+
   const ok = await verifyPassword(user.passwordHash, parsed.data.actual);
   if (!ok) {
     await logAudit({ userId: user.id, email: user.email, action: "LOGIN_FAILED", ip });

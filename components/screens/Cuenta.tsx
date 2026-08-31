@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import type { BetoVals } from "@/hooks/useBetoApp";
 import ImageSlot from "@/components/ImageSlot";
+import Loader from "@/components/Loader";
 import { calcularSemanaActual } from "@/lib/rutinas/semana-actual";
+
+interface PerfilVista { role: "CLIENTE" | "ADMIN"; nombre: string; iniciales: string; imagen: string | null; email: string; objetivo: string | null; tienePassword: boolean }
 
 interface SesionRow {
   id: string;
@@ -17,9 +20,20 @@ interface FilaSobrecargaVista { semana: number; series: number; reps: number; pc
 interface BloqueVista { id: string; tipo: string; foco: string; titulo: string; detalle: string; meta: string | null; sobrecarga: FilaSobrecargaVista[]; }
 interface DiaVista { id: string; diaSemana: number; descanso: boolean; calentamiento: string | null; bloques: BloqueVista[]; }
 interface AsignacionVista { id: string; asignadoEn: string; programa: { nombre: string; semanas: number; dias: DiaVista[] } }
+interface HistorialFilaVista { fecha: string; clase: string; estado: string; pago: string }
+interface PagoVista { fecha: string; concepto: string; medio: string; importe: string }
 
 const NOMBRES_DIA: Record<number, string> = { 0: "Domingo", 1: "Lunes", 2: "Martes", 3: "Miércoles", 4: "Jueves", 5: "Viernes", 6: "Sábado" };
 const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+function tiempoRelativo(fechaISO: string): string {
+  const dias = Math.floor((Date.now() - new Date(fechaISO).getTime()) / (1000 * 60 * 60 * 24));
+  if (dias <= 0) return "Hoy";
+  if (dias === 1) return "Hace 1 día";
+  if (dias < 7) return `Hace ${dias} días`;
+  const semanas = Math.floor(dias / 7);
+  return semanas === 1 ? "Hace 1 semana" : `Hace ${semanas} semanas`;
+}
 
 export default function Cuenta({ vals }: { vals: BetoVals }) {
   const [sesiones, setSesiones] = useState<SesionRow[]>([]);
@@ -30,6 +44,29 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
   const [passMsg, setPassMsg] = useState("");
   const [miRutina, setMiRutina] = useState<AsignacionVista | null>(null);
   const [completados, setCompletados] = useState<Record<string, boolean>>({});
+  const [perfil, setPerfil] = useState<PerfilVista | null>(null);
+  const [historial, setHistorial] = useState<HistorialFilaVista[]>([]);
+  const [pagos, setPagos] = useState<PagoVista[]>([]);
+  const [mensualidadActiva, setMensualidadActiva] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/cuenta/perfil")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setPerfil)
+      .catch(() => setPerfil(null));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/cuenta/historial").then((r) => r.json()).then((d) => setHistorial(d.historial ?? [])).catch(() => setHistorial([]));
+    fetch("/api/cuenta/pagos").then((r) => r.json()).then((d) => setPagos(d.pagos ?? [])).catch(() => setPagos([]));
+    fetch("/api/cuenta/mensualidad").then((r) => (r.ok ? r.json() : { activa: false })).then((d) => setMensualidadActiva(!!d.activa)).catch(() => setMensualidadActiva(false));
+  }, []);
+
+  const notis = [
+    ...(mensualidadActiva ? [{ icon: "ph-ticket", titulo: "Tu mensualidad está al día", texto: "Clases grupales garantizadas + 1 personalizada por semana.", bg: "var(--color-surface)", fecha: null as string | null }] : []),
+    ...(miRutina ? [{ icon: "ph-barbell", titulo: "Tenés una rutina asignada", texto: `${miRutina.programa.nombre} · asignada el ${new Date(miRutina.asignadoEn).toLocaleDateString("es-AR")}`, bg: "var(--color-surface)", fecha: miRutina.asignadoEn as string | null }] : []),
+    ...(pagos[0] ? [{ icon: "ph-receipt", titulo: "Último pago acreditado", texto: `${pagos[0].concepto} · ${pagos[0].importe} · ${new Date(pagos[0].fecha).toLocaleDateString("es-AR")}`, bg: "var(--color-surface)", fecha: pagos[0].fecha as string | null }] : []),
+  ];
 
   useEffect(() => {
     fetch("/api/cuenta/sesiones")
@@ -84,8 +121,8 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px", display: "grid", gridTemplateColumns: "236px 1fr", gap: 28, alignItems: "start" }}>
       <div style={{ position: "sticky", top: 86, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <ImageSlot alt="Camila Ferreyra" shape="circle" style={{ width: 44, height: 44, flex: "none" }} initials="CF" />
-          <div><div style={{ fontSize: 14.5, fontWeight: 500 }}>Camila Ferreyra</div><div style={{ fontSize: 11.5, opacity: .5 }}>Cuenta de cliente</div></div>
+          <ImageSlot alt={perfil?.nombre ?? ""} shape="circle" style={{ width: 44, height: 44, flex: "none" }} src={perfil?.imagen ?? undefined} initials={perfil?.iniciales ?? ""} />
+          <div><div style={{ fontSize: 14.5, fontWeight: 500 }}>{perfil?.nombre ?? "Cargando…"}</div><div style={{ fontSize: 11.5, opacity: .5 }}>{perfil?.role === "ADMIN" ? "Cuenta de administrador" : "Cuenta de cliente"}</div></div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {vals.cuentaTabs.map((t) => (
@@ -125,8 +162,11 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
             <table className="table">
               <thead><tr><th>Fecha</th><th>Clase</th><th>Estado</th><th style={{ textAlign: "right" }}>Pago</th></tr></thead>
               <tbody>
-                {vals.historial.map((h) => (
-                  <tr key={h.fecha}><td>{h.fecha}</td><td>{h.clase}</td><td>{h.estado}</td><td style={{ textAlign: "right" }}>{h.pago}</td></tr>
+                {historial.length === 0 && (
+                  <tr><td colSpan={4} style={{ opacity: 0.55, fontSize: 13 }}>Todavía no tenés clases pasadas.</td></tr>
+                )}
+                {historial.map((h) => (
+                  <tr key={h.fecha}><td>{new Date(h.fecha).toLocaleDateString("es-AR")}</td><td>{h.clase}</td><td>{h.estado}</td><td style={{ textAlign: "right" }}>{h.pago}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -157,7 +197,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
                         <button
                           key={d.id}
                           onClick={() => vals.setDiaClienteSel(i)}
-                          style={{ cursor: "pointer", fontSize: 13, padding: "9px 15px", borderRadius: 99, border: `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`, background: on ? "rgba(145,132,217,.16)" : "transparent", color: on ? "var(--color-accent-300)" : "var(--color-text)" }}
+                          style={{ cursor: "pointer", fontSize: 13, padding: "9px 15px", borderRadius: 99, border: `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`, background: on ? "rgba(232,40,40,.16)" : "transparent", color: on ? "#FF7A7A" : "var(--color-text)" }}
                         >
                           {NOMBRES_DIA[d.diaSemana]}
                         </button>
@@ -193,7 +233,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
                                 { label: "Carga", valor: b.tipo === "TRADICIONAL" ? `${fila?.pct ?? "—"}%` : "RPE 8" },
                                 { label: "Descanso", valor: fila?.descanso ?? "—" },
                               ].map((campo) => (
-                                <div key={campo.label} style={{ padding: 9, borderRadius: 10, border: "1px solid rgba(233,233,237,.12)", textAlign: "center" }}>
+                                <div key={campo.label} style={{ padding: 9, borderRadius: 10, border: "1px solid rgba(244,244,245,.12)", textAlign: "center" }}>
                                   <div style={{ fontSize: 10, textTransform: "uppercase", opacity: .45 }}>{campo.label}</div>
                                   <div style={{ fontSize: 15 }}>{campo.valor}</div>
                                 </div>
@@ -228,9 +268,9 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
             <div style={{ padding: 20, borderRadius: 14, background: "linear-gradient(120deg,var(--color-accent-900),var(--color-surface))", maxWidth: 520 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "-0.02em" }}>Mensualidad</div>
-                <span className="tag tag-outline">Ver precios</span>
+                <span className={`tag ${mensualidadActiva ? "tag-accent" : "tag-outline"}`}>{mensualidadActiva ? "Activa" : "Sin suscripción"}</span>
               </div>
-              <div style={{ fontSize: 13, opacity: .7, marginTop: 10 }}>Todas las grupales + 1 personalizada por semana.</div>
+              <div style={{ fontSize: 13, opacity: .7, marginTop: 10 }}>{mensualidadActiva ? "Todas las grupales + 1 personalizada por semana." : "Suscribite para tener cupo garantizado en todas las clases."}</div>
               <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
                 <button onClick={vals.goPrecios} className="btn btn-primary">Ver precios</button>
                 <button onClick={vals.goReservar} className="btn btn-secondary">Usar una clase</button>
@@ -240,8 +280,11 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
             <table className="table" style={{ maxWidth: 720 }}>
               <thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th style={{ textAlign: "right" }}>Importe</th></tr></thead>
               <tbody>
-                {vals.pagos.map((p) => (
-                  <tr key={p.fecha}><td>{p.fecha}</td><td>{p.concepto}</td><td>{p.medio}</td><td style={{ textAlign: "right" }}>{p.importe}</td></tr>
+                {pagos.length === 0 && (
+                  <tr><td colSpan={4} style={{ opacity: 0.55, fontSize: 13 }}>Todavía no tenés pagos registrados.</td></tr>
+                )}
+                {pagos.map((p) => (
+                  <tr key={p.fecha}><td>{new Date(p.fecha).toLocaleDateString("es-AR")}</td><td>{p.concepto}</td><td>{p.medio}</td><td style={{ textAlign: "right" }}>{p.importe}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -253,23 +296,23 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
             <div>
               <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis datos</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                <div className="field"><label>Nombre y apellido</label><input className="input" defaultValue="Camila Ferreyra" readOnly /></div>
-                <div className="field"><label>Email</label><input className="input" defaultValue="camila.f@gmail.com" readOnly /></div>
-                <div className="field"><label>Objetivo actual</label><input className="input" defaultValue="Volver a correr sin dolor de rodilla" readOnly /></div>
+                <div className="field"><label>Nombre y apellido</label><input className="input" value={perfil?.nombre ?? ""} readOnly /></div>
+                <div className="field"><label>Email</label><input className="input" value={perfil?.email ?? ""} readOnly /></div>
+                {perfil?.role !== "ADMIN" && (
+                  <div className="field"><label>Objetivo actual</label><input className="input" value={perfil?.objetivo ?? ""} readOnly /></div>
+                )}
               </div>
             </div>
 
             <div>
               <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Sesiones activas</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {sesiones.length === 0 && (
-                  <div style={{ fontSize: 13.5, opacity: .55 }}>Cargando sesiones…</div>
-                )}
+                {sesiones.length === 0 && <Loader label="Cargando sesiones…" minHeight={100} />}
                 {sesiones.map((s) => {
                   const actual = s.id === actualId;
                   return (
                     <div key={s.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)", border: actual ? `1px solid ${"var(--color-accent)"}` : "1px solid transparent" }}>
-                      <i className="ph ph-device-mobile" style={{ fontSize: 18, color: actual ? "var(--color-accent)" : "rgba(233,233,237,.6)" }} />
+                      <i className="ph ph-device-mobile" style={{ fontSize: 18, color: actual ? "var(--color-accent)" : "rgba(244,244,245,.6)" }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{s.userAgent || "Navegador"}{actual ? " · esta sesión" : ""}</div>
                         <div style={{ fontSize: 12, opacity: .55, marginTop: 2 }}>{s.ip || "IP desconocida"} · {new Date(s.createdAt).toLocaleString("es-AR")}</div>
@@ -285,15 +328,17 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
               </div>
             </div>
 
-            <div>
-              <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Cambiar contraseña</h3>
-              <form onSubmit={cambiarClave} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                <div className="field"><label>Contraseña actual</label><input className="input" type="password" value={actual} onChange={(e) => setActual(e.target.value)} required /></div>
-                <div className="field"><label>Nueva contraseña</label><input className="input" type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} placeholder="Mínimo 10 caracteres, letras y números" required minLength={10} /></div>
-                {passMsg && <div style={{ fontSize: 13, color: passMsg === "Contraseña actualizada" ? "#a9d39a" : "#e5a3a3" }}>{passMsg}</div>}
-                <button className="btn btn-primary" style={{ alignSelf: "flex-start" }}>Guardar nueva contraseña</button>
-              </form>
-            </div>
+            {perfil?.tienePassword && (
+              <div>
+                <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Cambiar contraseña</h3>
+                <form onSubmit={cambiarClave} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+                  <div className="field"><label>Contraseña actual</label><input className="input" type="password" value={actual} onChange={(e) => setActual(e.target.value)} required /></div>
+                  <div className="field"><label>Nueva contraseña</label><input className="input" type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} placeholder="Mínimo 10 caracteres, letras y números" required minLength={10} /></div>
+                  {passMsg && <div style={{ fontSize: 13, color: passMsg === "Contraseña actualizada" ? "#a9d39a" : "#e5a3a3" }}>{passMsg}</div>}
+                  <button className="btn btn-primary" style={{ alignSelf: "flex-start" }}>Guardar nueva contraseña</button>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
@@ -301,14 +346,15 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
           <div style={{ maxWidth: 680 }}>
             <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Notificaciones</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {vals.notis.map((n) => (
+              {notis.length === 0 && <div style={{ fontSize: 13.5, opacity: 0.55 }}>Todavía no tenés novedades.</div>}
+              {notis.map((n) => (
                 <div key={n.titulo} style={{ display: "flex", gap: 13, padding: 15, borderRadius: 12, background: n.bg }}>
                   <i className={`ph ${n.icon}`} style={{ fontSize: 20, color: "var(--color-accent)", marginTop: 1 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 500 }}>{n.titulo}</div>
                     <div style={{ fontSize: 12.5, opacity: .6, marginTop: 3, lineHeight: 1.45, textWrap: "pretty" }}>{n.texto}</div>
                   </div>
-                  <div style={{ fontSize: 11.5, opacity: .4, whiteSpace: "nowrap" }}>{n.cuando}</div>
+                  <div style={{ fontSize: 11, color: "rgba(244,244,245,.4)", flex: "none", alignSelf: "flex-start" }}>{n.fecha ? tiempoRelativo(n.fecha) : ""}</div>
                 </div>
               ))}
             </div>
