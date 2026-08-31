@@ -8,8 +8,8 @@ export default function Landing({ vals }: { vals: BetoVals }) {
     <div>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 48px", display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: 52, alignItems: "center" }}>
         <div>
-          <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Entrenamiento personal · Palermo, CABA</div>
-          <h1 style={{ fontSize: 66, lineHeight: .98, letterSpacing: "-0.04em", margin: "16px 0 0" }}>No es magia.<br />Es constancia.</h1>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Entrenamiento personal · Lobos, Buenos Aires</div>
+          <h1 style={{ fontSize: 72, lineHeight: .94, letterSpacing: "-0.04em", margin: "16px 0 0" }}>No es magia.<br /><span style={{ color: "var(--color-accent)" }}>Es constancia.</span></h1>
           <p style={{ fontSize: 17, lineHeight: 1.6, opacity: .75, maxWidth: "44ch", margin: "18px 0 0", textWrap: "pretty" }}>Entrenamiento personalizado, funcional, musculación y outdoor. Planificación por bloques, seguimiento real y clases en grupos de hasta 8 personas. Primera evaluación sin cargo.</p>
           <div style={{ display: "flex", gap: 10, marginTop: 26 }}>
             <button onClick={vals.goReservar} className="btn btn-primary" style={{ height: 46, paddingInline: 22, fontSize: 15 }}>Reservar mi primera clase</button>
@@ -18,18 +18,26 @@ export default function Landing({ vals }: { vals: BetoVals }) {
           <div style={{ display: "flex", gap: 34, marginTop: 38 }}>
             {vals.heroStats.map((s) => (
               <div key={s.k}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 30, letterSpacing: "-0.03em", color: "var(--color-accent-300)" }}>{s.v}</div>
+                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 30, letterSpacing: "-0.03em", color: "var(--color-accent)" }}>{s.v}</div>
                 <div style={{ fontSize: 12, opacity: .55, marginTop: 2 }}>{s.k}</div>
               </div>
             ))}
           </div>
         </div>
         <div style={{ height: 520, position: "relative" }}>
-          <ImageSlot alt="Beto entrenando" radius={14} src={PH.hero.src} credit={PH.hero.credit} creditHref={PH.hero.href} />
+          <ImageSlot
+            alt="Beto entrenando"
+            radius={14}
+            src={PH.hero.src}
+            credit={PH.hero.credit}
+            creditHref={PH.hero.href}
+            imgStyle={{ filter: "grayscale(1) contrast(1.12) brightness(.72)" }}
+            overlay={<div style={{ position: "absolute", inset: 0, background: "linear-gradient(200deg, rgba(232,40,40,.22), transparent 55%, rgba(0,0,0,.6))" }} />}
+          />
         </div>
       </div>
 
-      <div style={{ borderTop: "1px solid var(--color-divider)", borderBottom: "1px solid var(--color-divider)", background: "linear-gradient(180deg,rgba(43,39,65,.55),transparent)" }}>
+      <div style={{ borderTop: "1px solid var(--color-divider)", borderBottom: "1px solid var(--color-divider)", background: "linear-gradient(180deg,rgba(232,40,40,.07),transparent)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "26px 32px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 24 }}>
           {vals.bandas.map((b) => (
             <div key={b.t} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
@@ -46,23 +54,23 @@ export default function Landing({ vals }: { vals: BetoVals }) {
       <div id="servicios" style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0", scrollMarginTop: 70 }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24 }}>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Servicios</div>
+            <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Servicios</div>
             <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 0" }}>Todo lo que podés entrenar con Beto</h2>
           </div>
           <button onClick={vals.goReservar} className="btn btn-ghost">Ver horarios disponibles →</button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginTop: 28 }}>
           {vals.servicios.map((s) => (
-            <div key={s.id} onClick={s.onClick} style={{ cursor: "pointer", borderRadius: 14, overflow: "hidden", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column" }}>
-              <div style={{ height: 172 }}><ImageSlot alt={s.foto} shape="rect" src={s.src} credit={s.credit} creditHref={s.creditHref} /></div>
+            <div key={s.id} onClick={s.onClick} style={{ cursor: "pointer", borderRadius: 10, overflow: "hidden", background: "var(--color-surface)", border: "1px solid rgba(244,244,245,.09)", display: "flex", flexDirection: "column" }}>
+              <div style={{ height: 150 }}><ImageSlot alt={s.foto} shape="rect" src={s.src} credit={s.credit} creditHref={s.creditHref} /></div>
               <div style={{ padding: "16px 17px 18px", display: "flex", flexDirection: "column", gap: 7, flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 19, letterSpacing: "-0.02em" }}>{s.nombre}</div>
+                  <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 19, letterSpacing: "-0.02em" }}>{s.nombre}</div>
                   <span className="tag tag-accent" style={{ fontSize: 10 }}>{s.tag}</span>
                 </div>
                 <div style={{ fontSize: 13, opacity: .65, lineHeight: 1.5, flex: 1, textWrap: "pretty" }}>{s.desc}</div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, paddingTop: 11, borderTop: "1px solid var(--color-divider)" }}>
-                  <span style={{ fontSize: 13, color: "var(--color-accent-300)" }}>{s.dur} · {s.precioFmt}</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 13, color: "var(--color-accent)" }}>{s.dur} · {s.precioFmt}</span>
                   <span style={{ fontSize: 12, opacity: .45 }}>{s.cupo}</span>
                 </div>
               </div>
@@ -72,12 +80,12 @@ export default function Landing({ vals }: { vals: BetoVals }) {
       </div>
 
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0" }}>
-        <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Cómo funciona</div>
+        <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Cómo funciona</div>
         <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 28px" }}>Reservar y pagar lleva un minuto</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
           {vals.pasos.map((p) => (
-            <div key={p.n} style={{ padding: 20, borderRadius: 14, border: "1px solid var(--color-divider)" }}>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 34, letterSpacing: "-0.04em", color: "var(--color-accent-800)" }}>{p.n}</div>
+            <div key={p.n} style={{ padding: 20, borderRadius: 10, border: "1px solid var(--color-divider)" }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontStyle: "italic", fontWeight: 700, fontSize: 36, letterSpacing: "-0.04em", color: "var(--color-accent)", opacity: .55 }}>{p.n}</div>
               <div style={{ fontSize: 15, fontWeight: 500, marginTop: 8 }}>{p.t}</div>
               <div style={{ fontSize: 13, opacity: .6, lineHeight: 1.5, marginTop: 5, textWrap: "pretty" }}>{p.d}</div>
             </div>
@@ -86,12 +94,12 @@ export default function Landing({ vals }: { vals: BetoVals }) {
       </div>
 
       <div id="precios" style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0", scrollMarginTop: 70 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Precios</div>
+        <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Precios</div>
         <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 6px" }}>Clase suelta o mensualidad</h2>
         <p style={{ fontSize: 14, opacity: .6, margin: "0 0 26px" }}>Todos los valores en pesos argentinos. Cancelás sin costo hasta 6 h antes.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
           {vals.packs.map((p) => (
-            <div key={p.id} style={{ padding: 20, borderRadius: 14, border: `1px solid ${p.bd}`, background: p.bg, display: "flex", flexDirection: "column", gap: 11 }}>
+            <div key={p.id} style={{ padding: 20, borderRadius: 10, border: `1px solid ${p.bd}`, background: p.bg, display: "flex", flexDirection: "column", gap: 11 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 22 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 20, letterSpacing: "-0.02em", flex: 1 }}>{p.nombre}</div>
                 <span className="tag tag-accent" style={{ fontSize: 10, display: p.badgeShow as "inline-flex" | "none" }}>{p.badge}</span>
@@ -114,28 +122,31 @@ export default function Landing({ vals }: { vals: BetoVals }) {
         </div>
       </div>
 
-      <div id="galeria" style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0", scrollMarginTop: 70 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Galería</div>
-        <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 24px" }}>El espacio y las clases</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gridAutoRows: 190, gap: 12 }}>
-          <ImageSlot alt="Sala de entrenamiento" style={{ gridColumn: "span 2", gridRow: "span 2" }} radius={12} src={PH.g1.src} credit={PH.g1.credit} creditHref={PH.g1.href} />
-          <ImageSlot alt="Clase grupal" radius={12} src={PH.g2.src} credit={PH.g2.credit} creditHref={PH.g2.href} />
-          <ImageSlot alt="Cardio" radius={12} src={PH.g3.src} credit={PH.g3.credit} creditHref={PH.g3.href} />
-          <ImageSlot alt="Equipamiento" radius={12} src={PH.g4.src} credit={PH.g4.credit} creditHref={PH.g4.href} />
-          <ImageSlot alt="El estudio" radius={12} src={PH.g5.src} credit={PH.g5.credit} creditHref={PH.g5.href} />
-        </div>
-      </div>
-
       <div id="beto" style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0", display: "grid", gridTemplateColumns: ".9fr 1.1fr", gap: 48, alignItems: "center", scrollMarginTop: 70 }}>
-        <div style={{ height: 420 }}><ImageSlot alt="Retrato de Beto" radius={14} src={PH.retrato.src} credit={PH.retrato.credit} creditHref={PH.retrato.href} /></div>
+        <div style={{ height: 420 }}>
+          <ImageSlot
+            alt="Retrato de Beto"
+            radius={14}
+            src={PH.retrato.src}
+            credit={PH.retrato.credit}
+            creditHref={PH.retrato.href}
+            overlay={
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 55%, rgba(0,0,0,.75))", display: "flex", alignItems: "flex-end", padding: 16 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontStyle: "italic", fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em" }}>
+                  <span style={{ color: "#FFFFFF" }}>REG</span><span style={{ color: "var(--color-accent)" }}>TRAINER</span>
+                </span>
+              </div>
+            }
+          />
+        </div>
         <div>
-          <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Sobre Beto</div>
-          <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 14px" }}>Beto Álvarez</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.65, opacity: .78, textWrap: "pretty" }}>Profesor de Educación Física (UNLP) y entrenador funcional certificado NSCA. Hace 12 años acompaño a personas que arrancan de cero y a atletas que buscan volver a competir. Trabajo con evaluación inicial, planificación por bloques de cuatro semanas y seguimiento semanal: nada de rutinas genéricas.</p>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Sobre Beto</div>
+          <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 14px" }}>Roberto Ghiglione </h2>
+          <p style={{ fontSize: 15, lineHeight: 1.65, opacity: .78, textWrap: "pretty" }}>Profesor de Educación Física y Preparador Fisico de RegTrainer. Acompaño a personas que arrancan de cero y a atletas que buscan volver a competir. Trabajo con evaluación inicial, planificación por bloques de cuatro semanas y seguimiento semanal: nada de rutinas genéricas.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginTop: 22 }}>
             {vals.coachStats.map((s) => (
-              <div key={s.k} style={{ padding: 14, borderRadius: 12, background: "var(--color-surface)" }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, letterSpacing: "-0.03em", color: "var(--color-accent-300)" }}>{s.v}</div>
+              <div key={s.k} style={{ padding: 14, borderRadius: 10, background: "var(--color-surface)" }}>
+                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 24, letterSpacing: "-0.03em", color: "var(--color-accent)" }}>{s.v}</div>
                 <div style={{ fontSize: 12, opacity: .55, marginTop: 2 }}>{s.k}</div>
               </div>
             ))}
@@ -149,11 +160,11 @@ export default function Landing({ vals }: { vals: BetoVals }) {
       </div>
 
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0" }}>
-        <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Testimonios</div>
+        <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Testimonios</div>
         <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 24px" }}>Lo que dicen los que entrenan acá</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
           {vals.testimonios.map((t) => (
-            <div key={t.slot} style={{ padding: 20, borderRadius: 14, border: "1px solid var(--color-divider)", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div key={t.slot} style={{ padding: 20, borderRadius: 10, border: "1px solid var(--color-divider)", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 13, color: "var(--color-accent-300)", letterSpacing: ".12em" }}>{t.estrellas}</div>
               <div style={{ fontSize: 14.5, lineHeight: 1.6, flex: 1, textWrap: "pretty" }}>{t.texto}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 9, paddingTop: 10, borderTop: "1px solid var(--color-divider)" }}>
@@ -165,29 +176,11 @@ export default function Landing({ vals }: { vals: BetoVals }) {
         </div>
       </div>
 
-      <div id="blog" style={{ maxWidth: 1180, margin: "0 auto", padding: "64px 32px 0", scrollMarginTop: 70 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Tips y notas</div>
-        <h2 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "10px 0 24px" }}>Para leer entre clase y clase</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-          {vals.posts.map((p) => (
-            <div key={p.slot} style={{ cursor: "pointer", borderRadius: 14, overflow: "hidden", background: "var(--color-surface)" }}>
-              <div style={{ height: 150 }}><ImageSlot alt={p.titulo} shape="rect" src={p.src} credit={p.credit} creditHref={p.creditHref} /></div>
-              <div style={{ padding: 16 }}>
-                <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>{p.cat}</div>
-                <div style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.3, marginTop: 7, letterSpacing: "-0.015em" }}>{p.titulo}</div>
-                <div style={{ fontSize: 13, opacity: .6, lineHeight: 1.5, marginTop: 6, textWrap: "pretty" }}>{p.bajada}</div>
-                <div style={{ fontSize: 11.5, opacity: .45, marginTop: 11 }}>{p.meta}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <div style={{ maxWidth: 1180, margin: "64px auto 0", padding: "0 32px" }}>
-        <div style={{ borderRadius: 16, padding: 44, background: "linear-gradient(120deg,var(--color-accent-900),var(--color-surface))", display: "flex", alignItems: "center", gap: 32, flexWrap: "wrap" }}>
+        <div style={{ borderRadius: 16, padding: 44, background: "linear-gradient(115deg,#3A0A0C,#0C0C0E 62%)", border: "1px solid rgba(232,40,40,.35)", display: "flex", alignItems: "center", gap: 32, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 320 }}>
-            <h2 style={{ fontSize: 36, letterSpacing: "-0.03em", margin: 0 }}>Tu primera evaluación es sin cargo</h2>
-            <p style={{ fontSize: 15, opacity: .75, margin: "10px 0 0", maxWidth: "56ch", textWrap: "pretty" }}>Charlamos 45 minutos, medimos de dónde partís y armamos el plan. Después decidís si seguís.</p>
+            <h2 style={{ fontSize: 36, letterSpacing: "-0.03em", margin: 0 }}>Tu primera evaluación esta a un click de distancia</h2>
+            <p style={{ fontSize: 15, opacity: .75, margin: "10px 0 0", maxWidth: "56ch", textWrap: "pretty" }}>Charlamos, medimos de dónde partís y armamos el plan. Después decidís si seguís.</p>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={vals.goReservar} className="btn btn-primary" style={{ height: 46, paddingInline: 22, fontSize: 15 }}>Agendar evaluación</button>
@@ -197,12 +190,12 @@ export default function Landing({ vals }: { vals: BetoVals }) {
       </div>
 
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 32px 56px", display: "flex", justifyContent: "space-between", gap: 32, flexWrap: "wrap", fontSize: 13, opacity: .6 }}>
-        <div style={{ maxWidth: "34ch", lineHeight: 1.6 }}>Beto Training · Gorriti 4200, Palermo, CABA<br />Lunes a sábados de 7 a 21 h · +54 9 11 5555-1234</div>
+        <div style={{ maxWidth: "34ch", lineHeight: 1.6 }}>Roberto Ghiglione | REGTRAINER · Lobos, BSAS<br />Lunes a sábados · +54 9 2227 489847</div>
         <div style={{ display: "flex", gap: 26 }}>
-          <a href="#servicios">Servicios</a><a href="#precios">Precios</a><a href="#beto">Sobre Beto</a><a href="#blog">Blog</a>
+          <a href="#servicios">Servicios</a><a href="#precios">Precios</a><a href="#beto">Sobre Beto</a>
         </div>
-        <a href="https://www.lambdacodestudio.com.ar/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 11, padding: "12px 18px", borderRadius: 10, border: "1px solid var(--color-accent)", background: "linear-gradient(120deg,var(--color-accent-900),transparent)", color: "var(--color-text)", textDecoration: "none" }}>
-          <i className="ph ph-code" style={{ fontSize: 20, color: "var(--color-accent-300)" }} />
+        <a href="https://www.lambdacodestudio.com.ar/" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 11, padding: "12px 18px", borderRadius: 10, border: "1px solid rgba(232,40,40,.45)", background: "linear-gradient(120deg,var(--color-accent-900),transparent)", color: "var(--color-text)", textDecoration: "none" }}>
+          <i className="ph ph-code" style={{ fontSize: 20, color: "#FF7A7A" }} />
           <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
             <span style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", opacity: .6 }}>Desarrollado por</span>
             <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em", opacity: 1 }}>Lambda Code Studio</span>

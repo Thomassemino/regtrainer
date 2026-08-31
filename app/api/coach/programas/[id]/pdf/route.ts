@@ -3,7 +3,7 @@ import { requireAdmin } from "../../../../../../lib/coach/guards";
 import { renderPdfConSesion } from "../../../../../../lib/pdf/render";
 import { extraerCookieSesion } from "../../../../../../lib/pdf/session-cookie";
 
-const TEMAS_VALIDOS = new Set(["clean", "night", "pink"]);
+const TEMAS_VALIDOS = new Set(["black", "clean", "steel"]);
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const check = await requireAdmin();
@@ -11,8 +11,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
 
   const url = new URL(req.url);
-  const temaParam = url.searchParams.get("tema") ?? "clean";
-  const tema = TEMAS_VALIDOS.has(temaParam) ? temaParam : "clean";
+  const temaParam = url.searchParams.get("tema") ?? "black";
+  const tema = TEMAS_VALIDOS.has(temaParam) ? temaParam : "black";
 
   const cookie = extraerCookieSesion(req.headers.get("cookie"));
   if (!cookie) {

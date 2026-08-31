@@ -29,7 +29,7 @@ export default defineConfig({
       // El SMTP del e2e apunta a Maildev (docker-compose.test.yml), no al relay del .env.
       SMTP_HOST: process.env.SMTP_HOST ?? "localhost",
       SMTP_PORT: process.env.SMTP_PORT ?? "1025",
-      SMTP_FROM: process.env.SMTP_FROM ?? "Beto Training <no-reply@betotraining.com.ar>",
+      SMTP_FROM: process.env.SMTP_FROM ?? "RegTrainer <no-reply@betotraining.com.ar>",
       ...(process.env.E2E_DATABASE_URL ? { E2E_DATABASE_URL: process.env.E2E_DATABASE_URL } : {}),
       ...(process.env.AUTH_SECRET ? { AUTH_SECRET: process.env.AUTH_SECRET } : {}),
       ...(process.env.NEXTAUTH_URL ? { NEXTAUTH_URL: process.env.NEXTAUTH_URL } : {}),

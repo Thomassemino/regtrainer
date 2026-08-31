@@ -5,7 +5,9 @@ import { mpClient } from "../../../../lib/mercadopago/client";
 import { centavosAPesos } from "../../../../lib/dinero";
 import { logger } from "../../../../lib/logger";
 
-const PRECIO_MENSUALIDAD_CENTAVOS = 15000000;
+// Mismo default que usa el webhook (manejarPreapprovalAutorizado) si Mercado Pago no
+// reporta transaction_amount: nunca frenar el cobro por una fila de configuración ausente.
+const PRECIO_MENSUALIDAD_CENTAVOS_DEFAULT = 15000000;
 
 export async function POST(_req: Request) {
   const session = await auth();
@@ -17,6 +19,12 @@ export async function POST(_req: Request) {
   if (!cliente) {
     return Response.json({ error: "Cuenta sin perfil de cliente" }, { status: 400 });
   }
+
+  const planMensual = await prisma.planPrecio.findUnique({ where: { slug: "mensual" } });
+  if (!planMensual) {
+    logger.warn("plan de precio 'mensual' no encontrado; se usa el precio default. Corré el seed para que sea editable desde el panel.");
+  }
+  const precioMensualidad = planMensual?.precio ?? PRECIO_MENSUALIDAD_CENTAVOS_DEFAULT;
 
   const existente = await prisma.suscripcion.findUnique({ where: { clienteId: cliente.id } });
   if (existente && existente.estado === "ACTIVA") {
@@ -32,14 +40,14 @@ export async function POST(_req: Request) {
     const preapproval = new PreApproval(mpClient);
     const resultado = await preapproval.create({
       body: {
-        reason: "Mensualidad Beto Training",
+        reason: "Mensualidad RegTrainer",
         external_reference: cliente.id,
         payer_email: cliente.user.email,
         back_url: `${process.env.NEXTAUTH_URL}/?screen=cuenta`,
         auto_recurring: {
           frequency: 1,
           frequency_type: "months",
-          transaction_amount: centavosAPesos(PRECIO_MENSUALIDAD_CENTAVOS),
+          transaction_amount: centavosAPesos(precioMensualidad),
           currency_id: "ARS",
         },
       },

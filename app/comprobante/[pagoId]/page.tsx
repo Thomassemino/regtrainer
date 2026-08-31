@@ -23,7 +23,7 @@ export default async function ComprobantePage({
 
   return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: 40, color: "#1a1a1a" }}>
-      <h1 style={{ fontSize: 22, marginBottom: 24 }}>Beto Training — Comprobante interno</h1>
+      <h1 style={{ fontSize: 22, marginBottom: 24 }}>RegTrainer — Comprobante interno</h1>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <tbody>
           <tr><td style={{ padding: "6px 0", opacity: 0.6 }}>Cliente</td><td>{pago.cliente.nombre}</td></tr>
@@ -34,7 +34,7 @@ export default async function ComprobantePage({
         </tbody>
       </table>
       <p style={{ marginTop: 48, fontSize: 11, fontStyle: "italic", opacity: 0.7 }}>
-        Comprobante interno de Beto Training. No es una factura válida ante AFIP.
+        Comprobante interno de RegTrainer. No es una factura válida ante AFIP.
       </p>
     </div>
   );

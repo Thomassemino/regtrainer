@@ -36,7 +36,7 @@ export default function ColumnaDia({
 
   if (dia.descanso) {
     return (
-      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column" }}>
+      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 12, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column" }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{NOMBRES_DIA[dia.diaSemana]}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--color-surface)", display: "grid", placeItems: "center" }}>
@@ -52,7 +52,7 @@ export default function ColumnaDia({
   }
 
   return (
-    <div ref={setNodeRef} style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", gap: 12 }}>
+    <div ref={setNodeRef} style={{ border: "1px solid var(--color-divider)", borderRadius: 12, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{NOMBRES_DIA[dia.diaSemana]}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -107,7 +107,7 @@ export default function ColumnaDia({
         </SortableContext>
         <button
           onClick={() => onAbrirEditor(dia.id, null)}
-          style={{ marginTop: 8, width: "100%", height: 30, border: "1px dashed var(--color-divider)", borderRadius: 10, background: "transparent", color: "rgba(233,233,237,.45)", cursor: "pointer" }}
+          style={{ marginTop: 8, width: "100%", height: 30, border: "1px dashed rgba(244,244,245,.18)", borderRadius: 8, background: "transparent", color: "rgba(244,244,245,.45)", cursor: "pointer" }}
         >
           +
         </button>

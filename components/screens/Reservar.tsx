@@ -22,7 +22,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
               {vals.dias.map((d, i) => (
-                <button key={i} onClick={d.onClick} style={{ cursor: "pointer", padding: "12px 0", borderRadius: 12, border: `1px solid ${d.bd}`, background: d.bg, color: d.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <button key={i} onClick={d.onClick} style={{ cursor: "pointer", padding: "12px 0", borderRadius: 8, border: `1px solid ${d.bd}`, background: d.bg, color: d.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <span style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", opacity: .65 }}>{d.dow}</span>
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 21, lineHeight: 1 }}>{d.num}</span>
                   <span style={{ width: 4, height: 4, borderRadius: "50%", background: d.dot }} />
@@ -34,7 +34,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
             <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 11 }}>3 · Horario</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 9 }}>
               {vals.horarios.map((h) => (
-                <button key={h.hora} onClick={h.onClick} disabled={!h.onClick} style={{ cursor: h.cursor as "pointer" | "not-allowed", padding: "13px 6px", borderRadius: 12, border: `1px solid ${h.bd}`, background: h.bg, color: h.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <button key={h.hora} onClick={h.onClick} disabled={!h.onClick} style={{ cursor: h.cursor as "pointer" | "not-allowed", padding: "13px 6px", borderRadius: 8, border: `1px solid ${h.bd}`, background: h.bg, color: h.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, lineHeight: 1 }}>{h.hora}</span>
                   <span style={{ fontSize: 11, opacity: .6 }}>{h.cupos}</span>
                 </button>

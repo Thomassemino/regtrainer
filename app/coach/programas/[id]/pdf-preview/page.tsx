@@ -3,9 +3,9 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 const TEMAS = {
-  clean: { fondo: "#ffffff", texto: "#1b2320", acento: "#1f4d3a", chip: "#eef3f0", caja: "#f2f6f4" },
-  night: { fondo: "#0e1726", texto: "#e6ecf6", acento: "#7aa2f7", chip: "#17223a", caja: "#141d31" },
-  pink: { fondo: "#fffaf7", texto: "#2a1620", acento: "#8c1d3f", chip: "#fdeef2", caja: "#fdf1f4" },
+  black: { fondo: "#0A0A0C", texto: "#F4F4F5", acento: "#E82828", chip: "#17171C", caja: "#131317" },
+  clean: { fondo: "#FFFFFF", texto: "#17171A", acento: "#C4161C", chip: "#F1F1F3", caja: "#F6F6F7" },
+  steel: { fondo: "#F1F2F4", texto: "#1A1D22", acento: "#B3141A", chip: "#E2E4E8", caja: "#E7E9EC" },
 } as const;
 
 function calcularRangoSemana(inicio: Date, semana: number): string {
@@ -31,7 +31,7 @@ export default async function PdfPreviewPage({
 
   const { id } = await params;
   const { tema: temaParam } = await searchParams;
-  const tema = TEMAS[temaParam as keyof typeof TEMAS] ?? TEMAS.clean;
+  const tema = TEMAS[temaParam as keyof typeof TEMAS] ?? TEMAS.black;
 
   const programa = await prisma.programa.findUnique({
     where: { id },
@@ -49,17 +49,17 @@ export default async function PdfPreviewPage({
   return (
     <div style={{ fontFamily: "Arial, sans-serif", background: tema.fondo, color: tema.texto, padding: 32, maxWidth: 480, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-        <div style={{ width: 24, height: 24, borderRadius: 6, background: tema.acento, color: tema.fondo, display: "grid", placeItems: "center", fontSize: 13, fontWeight: 700 }}>B</div>
+        <div style={{ width: 24, height: 24, borderRadius: 6, background: tema.acento, color: tema.fondo, display: "grid", placeItems: "center", fontFamily: "Arial, sans-serif", fontStyle: "italic", fontSize: 13, fontWeight: 700 }}>R</div>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600 }}>Beto Training</div>
-          <div style={{ fontSize: 9, opacity: 0.6 }}>Programado por Beto Álvarez</div>
+          <div style={{ fontSize: 12, fontStyle: "italic", fontWeight: 700 }}>REGTRAINER</div>
+          <div style={{ fontSize: 8.5, opacity: 0.6 }}>Programado por Roberto Ghiglione</div>
         </div>
         <div style={{ marginLeft: "auto", fontSize: 8, opacity: 0.5 }}>PDF</div>
       </div>
 
       <div style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.7 }}>Plan de entrenamiento</div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 4 }}>
-        <h1 style={{ fontSize: 19, fontWeight: 600, color: tema.acento, margin: 0 }}>{programa.nombre}</h1>
+        <h1 style={{ fontSize: 16, fontStyle: "italic", fontWeight: 700, color: tema.acento, margin: 0, flex: 1, minWidth: 0 }}>{programa.nombre}</h1>
         <div style={{ fontSize: 11, opacity: 0.7 }}>{programa.semanas} semanas</div>
       </div>
 

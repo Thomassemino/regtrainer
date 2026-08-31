@@ -4,9 +4,9 @@ import type { BetoVals } from "@/hooks/useBetoApp";
 import type { TemaPdf } from "@/lib/types";
 
 const TEMAS: { id: TemaPdf; nombre: string; sub: string; icono: string; fondo: string; texto: string; acento: string }[] = [
-  { id: "clean", nombre: "Clean Design", sub: "Claro", icono: "ph-file-text", fondo: "#ffffff", texto: "#1b2320", acento: "#1f4d3a" },
-  { id: "night", nombre: "Night Design", sub: "Noche", icono: "ph-palette", fondo: "#0e1726", texto: "#e6ecf6", acento: "#7aa2f7" },
-  { id: "pink", nombre: "Pink Gold", sub: "Rosa y oro", icono: "ph-sparkle", fondo: "#fffaf7", texto: "#2a1620", acento: "#8c1d3f" },
+  { id: "black", nombre: "RegTrainer Black", sub: "Noche", icono: "ph-moon", fondo: "#0A0A0C", texto: "#F4F4F5", acento: "#E82828" },
+  { id: "clean", nombre: "Clean Red", sub: "Claro", icono: "ph-file-text", fondo: "#FFFFFF", texto: "#17171A", acento: "#C4161C" },
+  { id: "steel", nombre: "Steel", sub: "Gris técnico", icono: "ph-palette", fondo: "#F1F2F4", texto: "#1A1D22", acento: "#B3141A" },
 ];
 
 export default function ExportPdf({ vals }: { vals: BetoVals }) {
@@ -16,7 +16,7 @@ export default function ExportPdf({ vals }: { vals: BetoVals }) {
     // Navegación intencional a un endpoint que descarga el PDF (no una página interna).
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/api/coach/programas/${vals.programaIdActivo}/pdf?tema=${vals.temaPdfSel}${clienteQuery}`;
-    vals.showToast("PDF generado con la marca de Beto Training");
+    vals.showToast("PDF generado con la marca de RegTrainer");
   };
 
   return (
@@ -44,8 +44,8 @@ export default function ExportPdf({ vals }: { vals: BetoVals }) {
             >
               <div style={{ width: "100%", maxWidth: 280, borderRadius: 14, padding: 16, fontSize: 11, background: t.fondo, color: t.texto }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: t.acento, color: t.fondo, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700 }}>B</div>
-                  <div style={{ fontSize: 10 }}>Beto Training</div>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: t.acento, color: t.fondo, display: "grid", placeItems: "center", fontFamily: "var(--font-heading)", fontStyle: "italic", fontSize: 12, fontWeight: 700 }}>R</div>
+                  <div style={{ fontSize: 10 }}>RegTrainer</div>
                 </div>
                 <div style={{ fontSize: 8, textTransform: "uppercase", opacity: 0.6 }}>Plan de entrenamiento</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: t.acento }}>Fuerza & Motor</div>

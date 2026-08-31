@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 type Shape = "rect" | "rounded" | "circle";
 
@@ -12,22 +12,25 @@ interface ImageSlotProps {
   initials?: string;
   style?: CSSProperties;
   className?: string;
+  imgStyle?: CSSProperties;
+  overlay?: ReactNode;
 }
 
 export default function ImageSlot({
-  src, alt, credit, creditHref, shape = "rounded", radius = 12, initials, style, className,
+  src, alt, credit, creditHref, shape = "rounded", radius = 12, initials, style, className, imgStyle, overlay,
 }: ImageSlotProps) {
   const borderRadius = shape === "circle" ? "50%" : shape === "rect" ? 0 : radius;
 
   return (
     <div className={`img-slot ${className || ""}`} style={{ ...style, borderRadius, height: style?.height ?? "100%" }}>
       {src ? (
-        <img src={src} alt={alt} loading="lazy" />
+        <img src={src} alt={alt} loading="lazy" style={imgStyle} />
       ) : (
         <div className="avatar-fallback" style={{ fontSize: shape === "circle" ? "0.9em" : 14 }}>
           {initials || ""}
         </div>
       )}
+      {overlay}
       {credit && creditHref && (
         <a className="credit" href={creditHref} target="_blank" rel="noopener noreferrer">
           {credit}

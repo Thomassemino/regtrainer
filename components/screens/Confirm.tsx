@@ -3,8 +3,8 @@ import type { BetoVals } from "@/hooks/useBetoApp";
 export default function Confirm({ vals }: { vals: BetoVals }) {
   return (
     <div style={{ maxWidth: 620, margin: "0 auto", padding: "72px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, animation: "betoIn .35s ease both" }}>
-      <div style={{ width: 86, height: 86, borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--color-accent-900)", boxShadow: "0 0 0 12px rgba(145,132,217,.09)" }}>
-        <i className="ph-fill ph-check" style={{ fontSize: 40, color: "var(--color-accent-300)" }} />
+      <div style={{ width: 86, height: 86, borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--color-accent-900)", boxShadow: "0 0 0 12px rgba(232,40,40,.09)" }}>
+        <i className="ph-fill ph-check" style={{ fontSize: 40, color: "var(--color-accent)" }} />
       </div>
       <h1 style={{ fontSize: 36, letterSpacing: "-0.03em", margin: 0, textAlign: "center" }}>¡Turno confirmado!</h1>
       <p style={{ fontSize: 15, opacity: .65, margin: 0, textAlign: "center", textWrap: "pretty" }}>Te mandamos el comprobante por mail y un recordatorio 2 horas antes de la clase.</p>

@@ -21,9 +21,9 @@ const TIPO_LABEL: Record<BloqueApi["tipo"], string> = {
 };
 
 const FOCO_COLOR: Record<BloqueApi["foco"], string> = {
-  TECNICA: "var(--color-accent-400)",
-  RITMO: "var(--color-accent-2-400)",
-  MAXIMO_ESFUERZO: "var(--color-neutral-200)",
+  TECNICA: "#FF7A7A",
+  RITMO: "#FFB9B9",
+  MAXIMO_ESFUERZO: "#FFFFFF",
 };
 
 const FOCO_LABEL: Record<BloqueApi["foco"], string> = {
