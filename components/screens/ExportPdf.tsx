@@ -20,20 +20,20 @@ export default function ExportPdf({ vals }: { vals: BetoVals }) {
   };
 
   return (
-    <div style={{ padding: "32px 32px 72px" }}>
+    <div style={{ padding: "32px clamp(16px,4vw,32px) 72px" }}>
       <button onClick={() => vals.fichaId && vals.goFicha(vals.fichaId)} className="btn btn-ghost" style={{ marginBottom: 14 }}>
         <i className="ph ph-arrow-left" /> Volver a la ficha
       </button>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 34, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Exportar con tu marca</h1>
+          <h1 style={{ fontSize: "clamp(26px,6.5vw,34px)", letterSpacing: "-0.03em", margin: "0 0 6px" }}>Exportar con tu marca</h1>
           <p style={{ fontSize: 13.5, opacity: 0.6, margin: 0 }}>Tres temas para el PDF. El logo y el nombre son tuyos, no de la plataforma.</p>
         </div>
         <button onClick={descargar} className="btn btn-primary"><i className="ph ph-file-pdf" /> Descargar PDF</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+      <div className="rt-grid rt-cols-3" style={{ gap: 20 }}>
         {TEMAS.map((t) => {
           const elegido = vals.temaPdfSel === t.id;
           return (
@@ -64,7 +64,7 @@ export default function ExportPdf({ vals }: { vals: BetoVals }) {
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 30 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 30 }}>
         <button onClick={() => { vals.set({ cuentaTab: "rutina" }); vals.goCuenta(); }} className="btn btn-secondary">Ver cómo lo recibe el cliente</button>
         <button onClick={() => vals.programaIdActivo && vals.goBuilder(vals.programaIdActivo)} className="btn btn-ghost">Seguir editando el bloque</button>
       </div>

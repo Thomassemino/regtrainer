@@ -122,15 +122,15 @@ export default function ServiciosAdmin({ vals }: { vals: BetoVals }) {
   const formVisible = creando || editandoId !== null;
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,32px) 72px" }}>
       <button onClick={vals.goCoach} className="btn btn-ghost" style={{ marginBottom: 14 }}>
         <i className="ph ph-arrow-left" /> Panel
       </button>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "16px 24px", marginBottom: 24 }}>
         <div>
           <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Modo entrenador</div>
-          <h1 style={{ fontSize: 38, letterSpacing: "-0.03em", margin: "8px 0 0" }}>Servicios y precios</h1>
+          <h1 style={{ fontSize: "clamp(28px,7vw,38px)", letterSpacing: "-0.03em", margin: "8px 0 0" }}>Servicios y precios</h1>
         </div>
         <button onClick={empezarCreacion} className="btn btn-primary"><i className="ph ph-plus" /> Nuevo servicio</button>
       </div>
@@ -151,10 +151,10 @@ export default function ServiciosAdmin({ vals }: { vals: BetoVals }) {
             <input className="input" value={form.imagenUrl.startsWith("data:") ? "(archivo cargado)" : form.imagenUrl} onChange={(e) => setForm((f) => ({ ...f, imagenUrl: e.target.value }))} placeholder="https://..." />
             <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) onArchivoImagen(f); }} style={{ marginTop: 8 }} />
             {form.imagenUrl && (
-              <img src={form.imagenUrl} alt="Vista previa" style={{ marginTop: 8, height: 90, borderRadius: 8, objectFit: "cover" }} />
+              <img src={form.imagenUrl} alt="Vista previa" style={{ marginTop: 8, height: 90, maxWidth: "100%", borderRadius: 8, objectFit: "cover" }} />
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+          <div className="rt-grid rt-cols-3" style={{ gap: 12 }}>
             <div className="field"><label>Duración (min)</label><input className="input" type="number" value={form.duracionMin} onChange={(e) => setForm((f) => ({ ...f, duracionMin: Number(e.target.value) }))} /></div>
             <div className="field"><label>Precio (pesos)</label><input className="input" type="number" value={form.precioPesos} onChange={(e) => setForm((f) => ({ ...f, precioPesos: Number(e.target.value) }))} /></div>
             <div className="field"><label>Cupo máximo</label><input className="input" type="number" value={form.cupoMax} onChange={(e) => setForm((f) => ({ ...f, cupoMax: Number(e.target.value) }))} /></div>
@@ -175,7 +175,7 @@ export default function ServiciosAdmin({ vals }: { vals: BetoVals }) {
                   </span>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
                 <select className="input" style={{ width: 140 }} value={nuevoHorario.diaSemana} onChange={(e) => setNuevoHorario((n) => ({ ...n, diaSemana: Number(e.target.value) }))}>
                   {DIAS.map((d, i) => <option key={d} value={i}>{d}</option>)}
                 </select>
@@ -195,6 +195,7 @@ export default function ServiciosAdmin({ vals }: { vals: BetoVals }) {
       {cargando ? (
         <Loader label="Cargando…" />
       ) : (
+        <div className="rt-table-wrap">
         <table className="table">
           <thead><tr><th>Servicio</th><th>Tag</th><th>Duración</th><th>Precio</th><th>Cupo</th><th>Estado</th><th style={{ textAlign: "right" }} /></tr></thead>
           <tbody>
@@ -214,10 +215,11 @@ export default function ServiciosAdmin({ vals }: { vals: BetoVals }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
-      <h2 style={{ fontSize: 26, letterSpacing: "-0.02em", margin: "40px 0 16px" }}>Precios</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
+      <h2 style={{ fontSize: "clamp(22px,5.5vw,26px)", letterSpacing: "-0.02em", margin: "40px 0 16px" }}>Precios</h2>
+      <div className="rt-grid rt-cols-2">
         {planes.map((p) => (
           <PlanCard key={p.slug} plan={p} onGuardado={cargarPlanes} />
         ))}

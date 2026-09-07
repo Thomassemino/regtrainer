@@ -50,18 +50,23 @@ export default function Asignar({ vals }: { vals: BetoVals }) {
   };
 
   return (
-    <div style={{ padding: "32px 32px 72px" }}>
+    <div style={{ padding: "32px clamp(16px,4vw,32px) 72px" }}>
+      <style>{`
+        .asg-split{display:grid;grid-template-columns:1fr 340px;gap:24px}
+        .asg-side{position:sticky;top:86px}
+        @media (max-width:900px){.asg-split{grid-template-columns:1fr}.asg-side{position:static}}
+      `}</style>
       <button onClick={() => vals.programaIdActivo && vals.goBuilder(vals.programaIdActivo)} className="btn btn-ghost" style={{ marginBottom: 14 }}>
         <i className="ph ph-arrow-left" /> Volver al constructor
       </button>
-      <h1 style={{ fontSize: 34, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Asignar «{programa?.nombre ?? "…"}»</h1>
+      <h1 style={{ fontSize: "clamp(26px,6.5vw,34px)", letterSpacing: "-0.03em", margin: "0 0 6px" }}>Asignar «{programa?.nombre ?? "…"}»</h1>
       <p style={{ fontSize: 13.5, opacity: 0.6, margin: "0 0 24px" }}>
         El mismo programa a varios clientes, sin reescribirlo. Cada uno lo ve en su cuenta y lo recibe en PDF.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+      <div className="asg-split">
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 style={{ fontSize: 18, letterSpacing: "-0.02em", margin: 0 }}>Elegí a quién se lo asignás</h3>
             <button onClick={alternarTodos} className="btn btn-ghost">{todosSeleccionados ? "Deseleccionar todos" : "Seleccionar todos"}</button>
           </div>
@@ -89,7 +94,7 @@ export default function Asignar({ vals }: { vals: BetoVals }) {
           </div>
         </div>
 
-        <div style={{ position: "sticky", top: 86, padding: 20, borderRadius: 14, background: "var(--color-surface)", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="asg-side" style={{ padding: 20, borderRadius: 14, background: "var(--color-surface)", display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>Resumen</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ opacity: 0.55 }}>Programa</span><span>{programa?.nombre ?? "…"}</span></div>

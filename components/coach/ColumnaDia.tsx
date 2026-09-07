@@ -36,7 +36,7 @@ export default function ColumnaDia({
 
   if (dia.descanso) {
     return (
-      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 12, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column" }}>
+      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 12, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{NOMBRES_DIA[dia.diaSemana]}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--color-surface)", display: "grid", placeItems: "center" }}>
@@ -52,10 +52,10 @@ export default function ColumnaDia({
   }
 
   return (
-    <div ref={setNodeRef} style={{ border: "1px solid var(--color-divider)", borderRadius: 12, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", gap: 12 }}>
+    <div ref={setNodeRef} style={{ border: "1px solid var(--color-divider)", borderRadius: 12, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>{NOMBRES_DIA[dia.diaSemana]}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <div style={{ fontSize: 11, opacity: 0.4 }}>{dia.bloques.length > 0 ? `${dia.bloques.length} bloques` : "Sin cargar"}</div>
           {diasDisponibles.length > 0 && (
             duplicando ? (
@@ -64,7 +64,7 @@ export default function ColumnaDia({
                 defaultValue=""
                 onChange={(e) => elegirDestino(e.target.value)}
                 onBlur={() => setDuplicando(false)}
-                style={{ fontSize: 11, background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-divider)", borderRadius: 6 }}
+                style={{ fontSize: 11, background: "var(--color-surface)", color: "var(--color-text)", border: "1px solid var(--color-divider)", borderRadius: 6, maxWidth: "100%" }}
               >
                 <option value="" disabled>Duplicar en…</option>
                 {diasDisponibles.map((d) => (

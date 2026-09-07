@@ -106,8 +106,8 @@ export default function EditorEjercicio({
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "grid", placeItems: "center", padding: 24, background: "rgba(0,0,0,.78)", backdropFilter: "blur(4px)" }}>
-      <div style={{ width: "min(860px,100%)", maxHeight: "88vh", overflow: "auto", borderRadius: 14, background: "var(--color-surface-sunken)", boxShadow: "0 0 0 1px rgba(244,244,245,.13), 0 16px 40px rgba(0,0,0,.75)", padding: "20px 22px" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 80, display: "grid", placeItems: "center", padding: "clamp(10px, 3vw, 24px)", background: "rgba(0,0,0,.78)", backdropFilter: "blur(4px)" }}>
+      <div style={{ width: "min(860px,100%)", maxHeight: "88vh", overflow: "auto", borderRadius: 14, background: "var(--color-surface-sunken)", boxShadow: "0 0 0 1px rgba(244,244,245,.13), 0 16px 40px rgba(0,0,0,.75)", padding: "20px clamp(14px, 3vw, 22px)" }}>
         <div style={{ marginBottom: 12 }}>
           <span className="tag tag-outline">Por series</span>
         </div>
@@ -118,7 +118,7 @@ export default function EditorEjercicio({
             {TIPOS.map((t) => <option key={t.valor} value={t.valor}>{t.label}</option>)}
           </select>
           <div style={{ flex: 1 }} />
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {FOCOS.map((f) => (
               <button
                 key={f.valor}
@@ -158,7 +158,7 @@ export default function EditorEjercicio({
           onChange={(e) => setMeta(e.target.value)}
         />
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 20 }}>
           <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(244,244,245,.14)", background: "var(--color-surface)", textAlign: "center" }}>
             <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.5 }}><i className="ph ph-stack" /> Series</div>
             <NumberStepper value={seriesBase} onChange={setSeriesBase} min={1} disabled={!!bloqueExistente} />
@@ -194,7 +194,8 @@ export default function EditorEjercicio({
               <span style={{ fontSize: 14, color: "var(--color-accent)" }}><i className="ph ph-trend-up" /> Sobrecarga</span>
               <span className="tag tag-accent">Intensidad</span>
             </div>
-            <table className="table">
+            <div className="rt-table-wrap">
+            <table className="table" style={{ minWidth: 420 }}>
               <thead>
                 <tr><th>Semana</th><th style={{ textAlign: "center" }}>Series</th><th style={{ textAlign: "center" }}>Reps</th><th style={{ textAlign: "center" }}>%1RM</th><th style={{ textAlign: "center" }}>Descanso</th></tr>
               </thead>
@@ -210,11 +211,12 @@ export default function EditorEjercicio({
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         )}
 
         <p style={{ fontSize: 11.5, opacity: 0.45, margin: "16px 0" }}>La progresión se programa una vez y se aplica a todo el bloque.</p>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
           {bloqueExistente && <button onClick={borrar} className="btn btn-ghost">Borrar bloque</button>}
           <button onClick={vals.cerrarEditor} className="btn btn-secondary">Cancelar</button>
           <button onClick={guardar} disabled={guardando || !titulo || !detalle} className="btn btn-primary">

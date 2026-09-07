@@ -117,41 +117,50 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
     await fetch("/api/cuenta/mi-rutina/completar", { method: "POST", body: JSON.stringify({ bloqueId, semana }) });
   };
 
+  const sidebar = (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        <ImageSlot alt={perfil?.nombre ?? ""} shape="circle" style={{ width: 44, height: 44, flex: "none" }} src={perfil?.imagen ?? undefined} initials={perfil?.iniciales ?? ""} />
+        <div><div style={{ fontSize: 14.5, fontWeight: 500 }}>{perfil?.nombre ?? "Cargando…"}</div><div style={{ fontSize: 11.5, opacity: .5 }}>{perfil?.role === "ADMIN" ? "Cuenta de administrador" : "Cuenta de cliente"}</div></div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {vals.cuentaTabs.map((t) => (
+          <button key={t.label} onClick={t.onClick} style={{ cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: 0, background: t.bg, color: t.fg, fontSize: 13.5 }}>
+            <i className={`ph ${t.icon}`} style={{ fontSize: 17 }} />{t.label}
+          </button>
+        ))}
+      </div>
+      <button onClick={vals.goCoach} className="btn btn-secondary btn-block"><i className="ph ph-shield-check" /> Panel del entrenador</button>
+    </>
+  );
+
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px", display: "grid", gridTemplateColumns: "236px 1fr", gap: 28, alignItems: "start" }}>
-      <div style={{ position: "sticky", top: 86, display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <ImageSlot alt={perfil?.nombre ?? ""} shape="circle" style={{ width: 44, height: 44, flex: "none" }} src={perfil?.imagen ?? undefined} initials={perfil?.iniciales ?? ""} />
-          <div><div style={{ fontSize: 14.5, fontWeight: 500 }}>{perfil?.nombre ?? "Cargando…"}</div><div style={{ fontSize: 11.5, opacity: .5 }}>{perfil?.role === "ADMIN" ? "Cuenta de administrador" : "Cuenta de cliente"}</div></div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {vals.cuentaTabs.map((t) => (
-            <button key={t.label} onClick={t.onClick} style={{ cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: 0, background: t.bg, color: t.fg, fontSize: 13.5 }}>
-              <i className={`ph ${t.icon}`} style={{ fontSize: 17 }} />{t.label}
-            </button>
-          ))}
-        </div>
-        <button onClick={vals.goCoach} className="btn btn-secondary btn-block"><i className="ph ph-shield-check" /> Panel del entrenador</button>
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "clamp(24px, 5vw, 40px) clamp(16px, 4vw, 32px) clamp(40px, 8vw, 72px)", display: "flex", flexWrap: "wrap", gap: 28, alignItems: "flex-start" }}>
+      <div className="rt-hide-md" style={{ position: "sticky", top: 86, flex: "0 0 236px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {sidebar}
+      </div>
+      <div className="rt-show-md" style={{ flex: "1 1 100%", display: "flex", flexDirection: "column", gap: 16 }}>
+        {sidebar}
       </div>
 
-      <div>
+      <div style={{ flex: "1 1 min(480px, 100%)", minWidth: 0 }}>
         {vals.tabReservas && (
           <div>
-            <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis reservas</h2>
+            <h2 style={{ fontSize: "clamp(24px, 6vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis reservas</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {vals.reservas.map((r) => (
-                <div key={r.key ?? r.dow + r.num} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 18px", borderRadius: 14, background: "var(--color-surface)", opacity: r.op }}>
+                <div key={r.key ?? r.dow + r.num} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 18, padding: "clamp(12px, 3vw, 16px) clamp(14px, 3.5vw, 18px)", borderRadius: 14, background: "var(--color-surface)", opacity: r.op }}>
                   <div style={{ width: 54, textAlign: "center", flex: "none" }}>
                     <div style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", opacity: .5 }}>{r.dow}</div>
                     <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, lineHeight: 1.1 }}>{r.num}</div>
                   </div>
-                  <div style={{ width: 1, alignSelf: "stretch", background: "var(--color-divider)" }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="rt-hide-sm" style={{ width: 1, alignSelf: "stretch", background: "var(--color-divider)" }} />
+                  <div style={{ flex: "1 1 150px", minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 500 }}>{r.clase}</div>
                     <div style={{ fontSize: 12.5, opacity: .55, marginTop: 2 }}>{r.hora} · {r.lugar}</div>
                   </div>
                   <span className={`tag ${r.tagClass}`}>{r.estado}</span>
-                  <div style={{ display: r.accionesShow as "flex" | "none", gap: 8 }}>
+                  <div style={{ display: r.accionesShow as "flex" | "none", flexWrap: "wrap", gap: 8 }}>
                     <button onClick={r.onMove} className="btn btn-secondary">Reprogramar</button>
                     <button onClick={r.onCancel} className="btn btn-ghost">Cancelar</button>
                   </div>
@@ -159,17 +168,19 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
               ))}
             </div>
             <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "32px 0 12px" }}>Historial</h3>
-            <table className="table">
-              <thead><tr><th>Fecha</th><th>Clase</th><th>Estado</th><th style={{ textAlign: "right" }}>Pago</th></tr></thead>
-              <tbody>
-                {historial.length === 0 && (
-                  <tr><td colSpan={4} style={{ opacity: 0.55, fontSize: 13 }}>Todavía no tenés clases pasadas.</td></tr>
-                )}
-                {historial.map((h) => (
-                  <tr key={h.fecha}><td>{new Date(h.fecha).toLocaleDateString("es-AR")}</td><td>{h.clase}</td><td>{h.estado}</td><td style={{ textAlign: "right" }}>{h.pago}</td></tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="rt-table-wrap">
+              <table className="table">
+                <thead><tr><th>Fecha</th><th>Clase</th><th>Estado</th><th style={{ textAlign: "right" }}>Pago</th></tr></thead>
+                <tbody>
+                  {historial.length === 0 && (
+                    <tr><td colSpan={4} style={{ opacity: 0.55, fontSize: 13 }}>Todavía no tenés clases pasadas.</td></tr>
+                  )}
+                  {historial.map((h) => (
+                    <tr key={h.fecha}><td>{new Date(h.fecha).toLocaleDateString("es-AR")}</td><td>{h.clase}</td><td>{h.estado}</td><td style={{ textAlign: "right" }}>{h.pago}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -177,7 +188,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
           <div>
             {!miRutina ? (
               <div>
-                <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
+                <h2 style={{ fontSize: "clamp(24px, 6vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
                 <p style={{ fontSize: 13.5, opacity: .6 }}>Todavía no tenés un programa asignado. Cuando Beto te asigne uno, vas a verlo acá.</p>
               </div>
             ) : (() => {
@@ -186,7 +197,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
               const semanaActual = calcularSemanaActual(miRutina.asignadoEn, miRutina.programa.semanas);
               return (
                 <div>
-                  <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
+                  <h2 style={{ fontSize: "clamp(24px, 6vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 6px" }}>Mi rutina</h2>
                   <p style={{ fontSize: 13.5, opacity: .6, margin: "0 0 18px" }}>
                     {miRutina.programa.nombre} · {miRutina.programa.semanas} semanas · asignada por Beto el {new Date(miRutina.asignadoEn).toLocaleDateString("es-AR")}
                   </p>
@@ -218,15 +229,15 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
                         const hecho = !!completados[`${b.id}-${semanaActual}`];
                         return (
                           <div key={b.id} style={{ padding: "16px 18px", borderRadius: 12, background: "var(--color-surface)" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                              <span style={{ width: 22, height: 22, borderRadius: 6, background: "var(--color-accent-800)", color: "var(--color-accent-100)", display: "grid", placeItems: "center", fontSize: 11.5 }}>{i + 1}</span>
+                            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                              <span style={{ width: 22, height: 22, borderRadius: 6, background: "var(--color-accent-800)", color: "var(--color-accent-100)", display: "grid", placeItems: "center", fontSize: 11.5, flex: "none" }}>{i + 1}</span>
                               <span className="tag tag-accent">{b.tipo}</span>
                               {b.meta && <span style={{ fontSize: 10.5, opacity: .4 }}>{b.meta}</span>}
                               <span style={{ marginLeft: "auto", fontSize: 9.5, textTransform: "uppercase", opacity: .5 }}>{b.foco}</span>
                             </div>
                             <div style={{ fontSize: 15, fontWeight: 500 }}>{b.titulo}</div>
                             <div style={{ fontSize: 13, opacity: .6, marginBottom: 10 }}>{b.detalle}</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(120px, 100%), 1fr))", gap: 8 }}>
                               {[
                                 { label: "Series", valor: b.tipo === "TRADICIONAL" ? String(fila?.series ?? "—") : "—" },
                                 { label: "Rep", valor: b.tipo === "TRADICIONAL" ? String(fila?.reps ?? "—") : "—" },
@@ -264,37 +275,39 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
 
         {vals.tabPaquetes && (
           <div>
-            <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis paquetes</h2>
-            <div style={{ padding: 20, borderRadius: 14, background: "linear-gradient(120deg,var(--color-accent-900),var(--color-surface))", maxWidth: 520 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <h2 style={{ fontSize: "clamp(24px, 6vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis paquetes</h2>
+            <div style={{ padding: "clamp(16px, 4vw, 20px)", borderRadius: 14, background: "linear-gradient(120deg,var(--color-accent-900),var(--color-surface))", maxWidth: 520 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "-0.02em" }}>Mensualidad</div>
                 <span className={`tag ${mensualidadActiva ? "tag-accent" : "tag-outline"}`}>{mensualidadActiva ? "Activa" : "Sin suscripción"}</span>
               </div>
               <div style={{ fontSize: 13, opacity: .7, marginTop: 10 }}>{mensualidadActiva ? "Todas las grupales + 1 personalizada por semana." : "Suscribite para tener cupo garantizado en todas las clases."}</div>
-              <div style={{ display: "flex", gap: 9, marginTop: 16 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 16 }}>
                 <button onClick={vals.goPrecios} className="btn btn-primary">Ver precios</button>
                 <button onClick={vals.goReservar} className="btn btn-secondary">Usar una clase</button>
               </div>
             </div>
             <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "30px 0 12px" }}>Pagos</h3>
-            <table className="table" style={{ maxWidth: 720 }}>
-              <thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th style={{ textAlign: "right" }}>Importe</th></tr></thead>
-              <tbody>
-                {pagos.length === 0 && (
-                  <tr><td colSpan={4} style={{ opacity: 0.55, fontSize: 13 }}>Todavía no tenés pagos registrados.</td></tr>
-                )}
-                {pagos.map((p) => (
-                  <tr key={p.fecha}><td>{new Date(p.fecha).toLocaleDateString("es-AR")}</td><td>{p.concepto}</td><td>{p.medio}</td><td style={{ textAlign: "right" }}>{p.importe}</td></tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="rt-table-wrap" style={{ maxWidth: 720 }}>
+              <table className="table">
+                <thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th style={{ textAlign: "right" }}>Importe</th></tr></thead>
+                <tbody>
+                  {pagos.length === 0 && (
+                    <tr><td colSpan={4} style={{ opacity: 0.55, fontSize: 13 }}>Todavía no tenés pagos registrados.</td></tr>
+                  )}
+                  {pagos.map((p) => (
+                    <tr key={p.fecha}><td>{new Date(p.fecha).toLocaleDateString("es-AR")}</td><td>{p.concepto}</td><td>{p.medio}</td><td style={{ textAlign: "right" }}>{p.importe}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {vals.tabDatos && (
           <div style={{ maxWidth: 560, display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis datos</h2>
+              <h2 style={{ fontSize: "clamp(24px, 6vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>Mis datos</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
                 <div className="field"><label>Nombre y apellido</label><input className="input" value={perfil?.nombre ?? ""} readOnly /></div>
                 <div className="field"><label>Email</label><input className="input" value={perfil?.email ?? ""} readOnly /></div>
@@ -313,7 +326,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
                   return (
                     <div key={s.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)", border: actual ? `1px solid ${"var(--color-accent)"}` : "1px solid transparent" }}>
                       <i className="ph ph-device-mobile" style={{ fontSize: 18, color: actual ? "var(--color-accent)" : "rgba(244,244,245,.6)" }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{s.userAgent || "Navegador"}{actual ? " · esta sesión" : ""}</div>
                         <div style={{ fontSize: 12, opacity: .55, marginTop: 2 }}>{s.ip || "IP desconocida"} · {new Date(s.createdAt).toLocaleString("es-AR")}</div>
                       </div>
@@ -344,7 +357,7 @@ export default function Cuenta({ vals }: { vals: BetoVals }) {
 
         {vals.tabNotis && (
           <div style={{ maxWidth: 680 }}>
-            <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 18px" }}>Notificaciones</h2>
+            <h2 style={{ fontSize: "clamp(24px, 6vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>Notificaciones</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {notis.length === 0 && <div style={{ fontSize: 13.5, opacity: 0.55 }}>Todavía no tenés novedades.</div>}
               {notis.map((n) => (

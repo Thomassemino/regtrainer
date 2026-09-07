@@ -36,23 +36,23 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
   };
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
+    <div className="rt-container" style={{ paddingTop: 40, paddingBottom: 72 }}>
       <button onClick={vals.goCoach} className="btn btn-ghost" style={{ marginBottom: 14 }}>
         <i className="ph ph-arrow-left" /> Panel
       </button>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Modo entrenador</div>
-          <h1 style={{ fontSize: 38, letterSpacing: "-0.03em", margin: "8px 0 0" }}>Clientes</h1>
+          <h1 style={{ fontSize: "clamp(28px, 6vw, 38px)", letterSpacing: "-0.03em", margin: "8px 0 0" }}>Clientes</h1>
           <p style={{ fontSize: 13.5, opacity: 0.6, margin: "6px 0 0" }}>
             Entrá a la ficha de cada uno para armarle la rutina, asignarla y exportarla.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input
             className="input"
-            style={{ width: 240 }}
+            style={{ width: 240, maxWidth: "100%" }}
             placeholder="Buscar cliente"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -71,6 +71,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
       {cargando ? (
         <Loader label="Cargando clientes…" />
       ) : (
+        <div className="rt-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -99,6 +100,7 @@ export default function Clientes({ vals }: { vals: BetoVals }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

@@ -2,10 +2,17 @@ import type { BetoVals } from "@/hooks/useBetoApp";
 
 export default function Reservar({ vals }: { vals: BetoVals }) {
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
-      <h1 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: 0 }}>Reservá tu turno</h1>
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,32px) 72px" }}>
+      <style>{`
+        .rsv-split{display:grid;grid-template-columns:1fr 348px;gap:28px;align-items:start}
+        .rsv-horas{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+        .rsv-side{position:sticky;top:86px}
+        @media (max-width:900px){.rsv-split{grid-template-columns:1fr}.rsv-side{position:static}}
+        @media (max-width:600px){.rsv-horas{grid-template-columns:repeat(3,1fr)}}
+      `}</style>
+      <h1 style={{ fontSize: "clamp(28px,7vw,40px)", letterSpacing: "-0.03em", margin: 0 }}>Reservá tu turno</h1>
       <p style={{ fontSize: 14, opacity: .6, margin: "8px 0 28px" }}>Elegí la clase, el día y el horario. Podés pagar con tarjeta, Mercado Pago o en el estudio.</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 348px", gap: 28, alignItems: "start" }}>
+      <div className="rsv-split">
         <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
           <div>
             <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 11 }}>1 · Clase</div>
@@ -20,7 +27,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
               <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>2 · Día</div>
               <div style={{ fontSize: 12.5, opacity: .5 }}>Agosto 2026</div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "clamp(4px,1.5vw,8px)" }}>
               {vals.dias.map((d, i) => (
                 <button key={i} onClick={d.onClick} style={{ cursor: "pointer", padding: "12px 0", borderRadius: 8, border: `1px solid ${d.bd}`, background: d.bg, color: d.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <span style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", opacity: .65 }}>{d.dow}</span>
@@ -32,7 +39,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
           </div>
           <div>
             <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 11 }}>3 · Horario</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 9 }}>
+            <div className="rsv-horas">
               {vals.horarios.map((h) => (
                 <button key={h.hora} onClick={h.onClick} disabled={!h.onClick} style={{ cursor: h.cursor as "pointer" | "not-allowed", padding: "13px 6px", borderRadius: 8, border: `1px solid ${h.bd}`, background: h.bg, color: h.fg, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, lineHeight: 1 }}>{h.hora}</span>
@@ -47,7 +54,7 @@ export default function Reservar({ vals }: { vals: BetoVals }) {
           </label>
         </div>
 
-        <div style={{ position: "sticky", top: 86, padding: 20, borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 13 }}>
+        <div className="rsv-side" style={{ padding: 20, borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 13 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>Tu reserva</div>
           {vals.resumenItems.map((r) => (
             <div key={r.k} style={{ display: "flex", justifyContent: "space-between", gap: 14, fontSize: 13.5 }}><span style={{ opacity: .6 }}>{r.k}</span><span style={{ fontWeight: 500, textAlign: "right" }}>{r.v}</span></div>

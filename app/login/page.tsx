@@ -44,10 +44,10 @@ function LoginInner() {
   };
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 32px 80px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center" }}>
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "clamp(28px, 6vw, 56px) clamp(16px, 4vw, 32px) clamp(48px, 8vw, 80px)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: "clamp(28px, 5vw, 48px)", alignItems: "center" }}>
       <div style={{ maxWidth: "44ch" }}>
         <div style={{ fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--color-accent)" }}>Acceso</div>
-        <h1 style={{ fontSize: 44, lineHeight: 1.05, letterSpacing: "-0.035em", margin: "12px 0 0" }}>Entrá a tu cuenta</h1>
+        <h1 style={{ fontSize: "clamp(30px, 7vw, 44px)", lineHeight: 1.05, letterSpacing: "-0.035em", margin: "12px 0 0" }}>Entrá a tu cuenta</h1>
         <p style={{ fontSize: 15, lineHeight: 1.6, opacity: .7, margin: "14px 0 0", textWrap: "pretty" }}>
           Tus reservas, tu rutina, tu mensualidad y tus pagos en un solo lugar. Si ya compraste una clase, ya tenés cuenta.
         </p>
@@ -67,7 +67,7 @@ function LoginInner() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 420, width: "100%", padding: 24, borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-md)", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ width: "min(420px, 100%)", padding: "clamp(18px, 5vw, 24px)", borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-md)", display: "flex", flexDirection: "column", gap: 14 }}>
         {verificado && (
           <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(136,180,113,.12)", border: "1px solid rgba(136,180,113,.35)", fontSize: 13, color: "#a9d39a" }}>
             Cuenta verificada, ya podés ingresar.

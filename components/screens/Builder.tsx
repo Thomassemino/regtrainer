@@ -135,13 +135,18 @@ export default function Builder({ vals }: { vals: BetoVals }) {
 
   return (
     <div>
+      <style>{`
+        .builder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
+        @media (max-width:1100px){.builder-grid{grid-template-columns:repeat(2,1fr)}}
+        @media (max-width:640px){.builder-grid{grid-template-columns:1fr}}
+      `}</style>
       <div style={{ position: "sticky", top: 57, zIndex: 20, background: "rgba(0,0,0,.93)", backdropFilter: "blur(14px)", borderBottom: "1px solid var(--color-divider)" }}>
-        <div style={{ maxWidth: 1560, margin: "0 auto", padding: "11px 24px", display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ maxWidth: 1560, margin: "0 auto", padding: "11px clamp(12px, 3vw, 24px)", display: "flex", alignItems: "center", gap: 14, rowGap: 8, flexWrap: "wrap" }}>
           <button onClick={vals.back} className="btn btn-ghost"><i className="ph ph-arrow-left" /></button>
-          <div style={{ fontSize: 15, fontWeight: 500, whiteSpace: "nowrap" }}>{programa.nombre}</div>
+          <div style={{ fontSize: 15, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{programa.nombre}</div>
           <span className="tag tag-outline">{programa.estado === "ASIGNADO" ? "Asignado" : "Sin asignar"}</span>
           <div style={{ flex: 1 }} />
-          <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 8, border: "1px solid var(--color-divider)" }}>
+          <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 8, border: "1px solid var(--color-divider)", flexWrap: "wrap" }}>
             {Array.from({ length: programa.semanas }, (_, i) => i + 1).map((semana) => (
               <button
                 key={semana}
@@ -166,7 +171,7 @@ export default function Builder({ vals }: { vals: BetoVals }) {
       </div>
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <div style={{ maxWidth: 1560, margin: "0 auto", padding: "18px 24px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, alignItems: "start" }}>
+        <div className="builder-grid" style={{ maxWidth: 1560, margin: "0 auto", padding: "18px clamp(12px, 3vw, 24px)" }}>
           {diasOrdenados.map((dia) => (
             <ColumnaDia
               key={dia.id}
@@ -178,7 +183,7 @@ export default function Builder({ vals }: { vals: BetoVals }) {
               onDuplicarDia={duplicarDia}
             />
           ))}
-          {diasOrdenados.length < 7 && <div style={{ width: "100%", maxWidth: 320, minHeight: 300 }} />}
+          {diasOrdenados.length < 7 && <div className="rt-hide-md" style={{ width: "100%", maxWidth: 320, minHeight: 300 }} />}
 
           <div style={{ border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface-sunken)", padding: 14, minHeight: 300 }}>
             <div style={{ fontSize: 10.5, textTransform: "uppercase", color: "var(--color-accent)" }}>Volumen semanal</div>

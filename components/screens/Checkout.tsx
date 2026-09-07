@@ -2,13 +2,20 @@ import type { BetoVals } from "@/hooks/useBetoApp";
 
 export default function Checkout({ vals }: { vals: BetoVals }) {
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,32px) 72px" }}>
+      <style>{`
+        .chk-split{display:grid;grid-template-columns:1fr 348px;gap:28px;align-items:start}
+        .chk-metodos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .chk-side{position:sticky;top:86px}
+        @media (max-width:900px){.chk-split{grid-template-columns:1fr}.chk-side{position:static}}
+        @media (max-width:600px){.chk-metodos{grid-template-columns:1fr}}
+      `}</style>
       <button onClick={vals.back} className="btn btn-ghost" style={{ marginBottom: 10 }}><i className="ph ph-arrow-left" /> Volver</button>
-      <h1 style={{ fontSize: 40, letterSpacing: "-0.03em", margin: "0 0 28px" }}>Confirmar y pagar</h1>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 348px", gap: 28, alignItems: "start" }}>
+      <h1 style={{ fontSize: "clamp(28px,7vw,40px)", letterSpacing: "-0.03em", margin: "0 0 28px" }}>Confirmar y pagar</h1>
+      <div className="chk-split">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>Forma de pago</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="chk-metodos">
             {vals.metodos.map((m) => (
               <button key={m.id} onClick={m.onClick} style={{ cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: 15, borderRadius: 12, border: `1px solid ${m.bd}`, background: m.bg, color: "var(--color-text)" }}>
                 <i className={`ph ${m.icon}`} style={{ fontSize: 22, color: "var(--color-accent)" }} />
@@ -24,15 +31,15 @@ export default function Checkout({ vals }: { vals: BetoVals }) {
             <div style={{ padding: 20, borderRadius: 14, border: "1px solid var(--color-divider)", display: "flex", flexDirection: "column", gap: 12, maxWidth: 560 }}>
               <div className="field"><label>Nombre en la tarjeta</label><input className="input" defaultValue="Camila Ferreyra" readOnly /></div>
               <div className="field"><label>Número de tarjeta</label><input className="input" defaultValue="4509 9535 6623 3704" readOnly /></div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <div className="field" style={{ flex: 1 }}><label>Vencimiento</label><input className="input" defaultValue="09/29" readOnly /></div>
-                <div className="field" style={{ flex: 1 }}><label>CVV</label><input className="input" defaultValue="•••" readOnly /></div>
-                <div className="field" style={{ flex: 1 }}><label>DNI</label><input className="input" defaultValue="38.221.904" readOnly /></div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <div className="field" style={{ flex: "1 1 110px" }}><label>Vencimiento</label><input className="input" defaultValue="09/29" readOnly /></div>
+                <div className="field" style={{ flex: "1 1 110px" }}><label>CVV</label><input className="input" defaultValue="•••" readOnly /></div>
+                <div className="field" style={{ flex: "1 1 110px" }}><label>DNI</label><input className="input" defaultValue="38.221.904" readOnly /></div>
               </div>
               <div className="field"><label>Cuotas</label>
-                <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 3 }}>
                   {vals.cuotas.map((c) => (
-                    <button key={c.label} onClick={c.onClick} style={{ cursor: "pointer", flex: 1, fontSize: 13, padding: "10px 0", borderRadius: 9, border: `1px solid ${c.bd}`, background: c.bg, color: c.fg }}>{c.label}</button>
+                    <button key={c.label} onClick={c.onClick} style={{ cursor: "pointer", flex: "1 1 72px", fontSize: 13, padding: "10px 0", borderRadius: 9, border: `1px solid ${c.bd}`, background: c.bg, color: c.fg }}>{c.label}</button>
                   ))}
                 </div>
               </div>
@@ -42,7 +49,7 @@ export default function Checkout({ vals }: { vals: BetoVals }) {
             Vas a recibir un comprobante simple por email — no es una factura fiscal (sin AFIP).
           </p>
         </div>
-        <div style={{ position: "sticky", top: 86, padding: 20, borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="chk-side" style={{ padding: 20, borderRadius: 14, background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--color-accent)" }}>Resumen</div>
           {vals.checkoutItems.map((r) => (
             <div key={r.k} style={{ display: "flex", justifyContent: "space-between", gap: 14, fontSize: 13.5 }}><span style={{ opacity: .6 }}>{r.k}</span><span style={{ fontWeight: 500, textAlign: "right" }}>{r.v}</span></div>

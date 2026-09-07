@@ -62,8 +62,8 @@ export default function TarjetaBloque({ bloque, onAbrir }: { bloque: BloqueApi; 
           {FOCO_LABEL[bloque.foco]}
         </span>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, marginTop: 4 }}>{bloque.titulo}</div>
-      <div style={{ fontSize: 11.5, opacity: 0.55, lineHeight: 1.35 }}>{bloque.detalle}</div>
+      <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, marginTop: 4, overflowWrap: "break-word" }}>{bloque.titulo}</div>
+      <div style={{ fontSize: 11.5, opacity: 0.55, lineHeight: 1.35, overflowWrap: "break-word" }}>{bloque.detalle}</div>
     </div>
   );
 }

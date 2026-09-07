@@ -22,7 +22,7 @@ export default async function ComprobantePage({
   }
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", padding: 40, color: "#1a1a1a" }}>
+    <div style={{ fontFamily: "Arial, sans-serif", padding: "clamp(20px,5vw,40px)", color: "#1a1a1a" }}>
       <h1 style={{ fontSize: 22, marginBottom: 24 }}>RegTrainer — Comprobante interno</h1>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <tbody>

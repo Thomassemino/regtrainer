@@ -91,13 +91,21 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
   }
 
   return (
-    <div style={{ padding: "32px 32px 72px" }}>
+    <div style={{ padding: "32px clamp(16px, 4vw, 32px) 72px" }}>
+      <style>{`
+        .ficha-grid{display:grid;grid-template-columns:300px 1fr;gap:28px;align-items:start}
+        .ficha-aside{position:sticky;top:86px;display:flex;flex-direction:column;gap:16px}
+        @media (max-width:900px){
+          .ficha-grid{grid-template-columns:1fr}
+          .ficha-aside{position:static}
+        }
+      `}</style>
       <button onClick={vals.goClientes} className="btn btn-ghost" style={{ marginBottom: 14 }}>
         <i className="ph ph-arrow-left" /> Clientes
       </button>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 28, alignItems: "start" }}>
-        <div style={{ position: "sticky", top: 86, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="ficha-grid">
+        <div className="ficha-aside">
           <div style={{ padding: 20, borderRadius: 14, background: "var(--color-surface)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <ImageSlot alt={cliente.nombre} shape="circle" style={{ width: 52, height: 52, flex: "none" }} src={cliente.user.image ?? undefined} initials={cliente.iniciales} />
@@ -124,7 +132,7 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
         </div>
 
         <div>
-          <h2 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "0 0 6px" }}>Rutinas de {cliente.nombre.split(" ")[0]}</h2>
+          <h2 style={{ fontSize: "clamp(24px, 5.5vw, 30px)", letterSpacing: "-0.03em", margin: "0 0 6px" }}>Rutinas de {cliente.nombre.split(" ")[0]}</h2>
           <p style={{ fontSize: 13.5, opacity: 0.6, margin: "0 0 18px" }}>
             Cada programa es un mesociclo de semanas configurables. Duplicalo para arrancar el siguiente bloque sin reescribir nada.
           </p>
@@ -137,7 +145,7 @@ export default function Ficha({ vals }: { vals: BetoVals }) {
             {cliente.asignaciones.map((a, i) => {
               const estado = ESTADO_LABEL[a.programa.estado] ?? ESTADO_LABEL.BORRADOR;
               return (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 18px", borderRadius: 14, background: "var(--color-surface)" }}>
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 18, rowGap: 10, padding: "16px 18px", borderRadius: 14, background: "var(--color-surface)", flexWrap: "wrap" }}>
                   <div style={{ width: 46, textAlign: "center", flex: "none" }}>
                     <div style={{ fontSize: 10.5, textTransform: "uppercase", opacity: 0.5 }}>Bloque</div>
                     <div style={{ fontFamily: "var(--font-heading)", fontSize: 24 }}>{cliente.asignaciones.length - 1 - i}</div>

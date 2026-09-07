@@ -19,11 +19,13 @@ function ResetearPasswordInner() {
   };
 
   return (
-    <form onSubmit={onSubmit} className="field">
-      <input className="input" type="password" placeholder="Nueva contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} />
-      <button className="btn btn-primary" type="submit">Guardar nueva contraseña</button>
-      {mensaje && <p>{mensaje}</p>}
-    </form>
+    <div className="rt-container" style={{ paddingBlock: "clamp(28px, 6vw, 56px)" }}>
+      <form onSubmit={onSubmit} className="field" style={{ width: "min(440px, 100%)" }}>
+        <input className="input" type="password" placeholder="Nueva contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={10} />
+        <button className="btn btn-primary" type="submit" style={{ marginTop: 12 }}>Guardar nueva contraseña</button>
+        {mensaje && <p>{mensaje}</p>}
+      </form>
+    </div>
   );
 }
 

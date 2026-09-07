@@ -49,19 +49,24 @@ export default function Coach({ vals }: { vals: BetoVals }) {
     : [];
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 32px 72px" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
+    <div className="rt-container" style={{ paddingTop: 40, paddingBottom: 72 }}>
+      <style>{`
+        .coach-main{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;margin-top:28px;align-items:start}
+        .coach-main>div{min-width:0}
+        @media (max-width:900px){.coach-main{grid-template-columns:1fr}}
+      `}</style>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 24, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--color-accent)" }}>Modo entrenador</div>
-          <h1 style={{ fontSize: 38, letterSpacing: "-0.03em", margin: "8px 0 0" }}>Panel de Beto</h1>
+          <h1 style={{ fontSize: "clamp(28px, 6vw, 38px)", letterSpacing: "-0.03em", margin: "8px 0 0" }}>Panel de Beto</h1>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button onClick={vals.goClientes} className="btn btn-primary"><i className="ph ph-squares-four" /> Constructor de rutinas</button>
           <button onClick={vals.goServiciosAdmin} className="btn btn-secondary"><i className="ph ph-tag" /> Servicios y precios</button>
           <button onClick={vals.goCuenta} className="btn btn-secondary">Volver a la vista cliente</button>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+      <div className="rt-grid rt-cols-4" style={{ gap: 14 }}>
         {kpiTiles.map((k) => (
           <div key={k.k} style={{ padding: 18, borderRadius: 14, background: "var(--color-surface)" }}>
             <div style={{ fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", opacity: .5 }}>{k.k}</div>
@@ -70,7 +75,7 @@ export default function Coach({ vals }: { vals: BetoVals }) {
           </div>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1.15fr .85fr", gap: 24, marginTop: 28, alignItems: "start" }}>
+      <div className="coach-main">
         <div>
           <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "0 0 12px" }}>Agenda de hoy</h3>
           {agenda.length === 0 && <div style={{ fontSize: 13.5, opacity: 0.55 }}>No hay clases programadas para hoy.</div>}
@@ -102,7 +107,7 @@ export default function Coach({ vals }: { vals: BetoVals }) {
           {clientesAtencion.length === 0 && <div style={{ fontSize: 13.5, opacity: 0.55 }}>Nada urgente por ahora.</div>}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {clientesAtencion.map((c) => (
-              <div key={c.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)" }}>
+              <div key={c.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "13px 15px", borderRadius: 12, background: "var(--color-surface)", flexWrap: "wrap" }}>
                 <span style={{ width: 34, height: 34, flex: "none", borderRadius: "50%", background: "var(--color-accent-800)", color: "var(--color-accent-100)", display: "grid", placeItems: "center", fontSize: 12.5, fontWeight: 500 }}>{c.iniciales}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 500 }}>{c.nombre}</div>
@@ -118,7 +123,8 @@ export default function Coach({ vals }: { vals: BetoVals }) {
             ))}
           </div>
           <h3 style={{ fontSize: 20, letterSpacing: "-0.02em", margin: "30px 0 12px" }}>Últimos pagos</h3>
-          <table className="table">
+          <div className="rt-table-wrap">
+          <table className="table" style={{ minWidth: 420 }}>
             <thead><tr><th>Cliente</th><th>Concepto</th><th style={{ textAlign: "right" }}>Importe</th><th /></tr></thead>
             <tbody>
               {vals.pagosCoach.map((p) => (
@@ -135,6 +141,7 @@ export default function Coach({ vals }: { vals: BetoVals }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
